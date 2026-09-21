@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>碎银与浮生 - 周统计 & 月统计交互设计预览</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    ::-webkit-scrollbar { display: none; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .wechat-green { background-color: #07C160; }
+    .wechat-green-text { color: #07C160; }
+    .wechat-green-border { border-color: #07C160; }
+    .bar-transition { transition: height 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen flex justify-center items-center py-0 sm:py-6 antialiased selection:bg-emerald-100">
+
+  <!-- 手机外框容器 -->
+  <div class="w-full sm:w-[390px] h-[100vh] sm:h-[844px] bg-[#F7F8FA] sm:rounded-[44px] shadow-2xl overflow-hidden flex flex-col relative sm:border-[8px] sm:border-slate-800">
+    
+    <!-- 1. 顶部状态栏 & 导航 -->
+    <div class="bg-white/90 backdrop-blur-md pt-3 px-4 pb-2 border-b border-slate-100 flex-shrink-0 z-20">
+      <div class="flex justify-between items-center text-xs font-semibold text-slate-800 px-1 mb-2">
+        <span>16:08</span>
+        <div class="flex items-center space-x-1.5 text-[10px]">
+          <span>5G</span>
+          <div class="w-5 h-2.5 border border-slate-700 rounded-sm p-0.5 flex items-center">
+            <div class="h-full w-4/5 bg-slate-800 rounded-2xs"></div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="flex justify-between items-center relative py-1">
+        <div class="flex items-center space-x-2">
+          <span class="text-base font-bold text-slate-900 tracking-tight">碎银与浮生</span>
+          <span class="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded-full border border-emerald-200">周/月统计升级</span>
+        </div>
+        
+        <!-- 微信小程序右上角胶囊按钮 -->
+        <div class="flex items-center bg-slate-100/90 border border-slate-200/80 rounded-full px-2.5 py-1 space-x-2.5 shadow-2xs">
+          <div class="flex space-x-0.5">
+            <span class="w-1 h-1 bg-slate-700 rounded-full"></span>
+            <span class="w-1 h-1 bg-slate-700 rounded-full"></span>
+            <span class="w-1 h-1 bg-slate-700 rounded-full"></span>
+          </div>
+          <span class="w-[1px] h-3 bg-slate-300"></span>
+          <div class="w-3.5 h-3.5 border-2 border-slate-700 rounded-full flex items-center justify-center">
+            <div class="w-1 h-1 bg-slate-700 rounded-full"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. 中间滚动内容区 -->
+    <div id="scrollContent" class="flex-1 overflow-y-auto pb-24 px-3.5 pt-3 space-y-3">
+      
+      <!-- ==================== TAB 1: 账本与生活流水 ==================== -->
+      <div id="timelineView" class="space-y-3">
+        
+        <!-- 概览大卡片：支持【本月】/【本周】/【全部】时间维度一键切换 -->
+        <div id="overviewCard" class="bg-gradient-to-br from-[#07C160] to-[#059669] text-white rounded-3xl p-4 shadow-md shadow-emerald-600/20 relative overflow-hidden select-none">
+          <div class="absolute -right-8 -bottom-8 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+          
+          <!-- 时间维度选择器 Tab 胶囊 -->
+          <div class="flex justify-between items-center mb-2.5">
+            <div class="flex bg-black/15 p-0.5 rounded-xl text-[11px] backdrop-blur-xs flex-shrink-0">
+              <button onclick="switchTimelineScope('week')" id="scopeBtnWeek" class="px-2.5 py-1 rounded-lg font-bold bg-white text-emerald-800 shadow-2xs transition whitespace-nowrap">
+                ⚡ 本周
+              </button>
+              <button onclick="switchTimelineScope('month')" id="scopeBtnMonth" class="px-2.5 py-1 rounded-lg font-medium text-emerald-100 hover:text-white transition whitespace-nowrap">
+                📅 本月
+              </button>
+              <button onclick="switchTimelineScope('all')" id="scopeBtnAll" class="px-2.5 py-1 rounded-lg font-medium text-emerald-100 hover:text-white transition whitespace-nowrap">
+                📜 全部
+              </button>
+            </div>
+
+            <!-- 顶部操作按钮组：仅保留 记一笔 -->
+            <div class="flex items-center space-x-1.5 flex-shrink-0">
+              <button onclick="openDirectAddModal('bill')" class="flex items-center space-x-1 text-[11px] bg-white text-emerald-800 font-bold px-2.5 py-1 rounded-lg shadow-2xs transition active:scale-95 whitespace-nowrap">
+                <span>💰</span>
+                <span>记一笔</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 月份切换导航条 (仅在“本月/月度”模式或需要时展示，支持滑动与点击) -->
+          <div id="previewMonthNavRow" class="hidden flex justify-between items-center bg-black/15 px-2.5 py-1.5 rounded-xl mb-2.5 text-xs">
+            <button onclick="changePreviewMonth(-1)" class="px-2.5 py-0.5 bg-white/20 hover:bg-white/30 rounded-lg text-white font-medium flex items-center space-x-1 transition active:scale-95">
+              <span>◀</span>
+              <span id="previewPrevMonthBtn">8月</span>
+            </button>
+            <div class="text-center cursor-pointer" onclick="alert('提示：在卡片上向左滑进入下个月，向右滑进入上个月')">
+              <span class="font-bold text-white text-xs block tracking-wide" id="previewNavCurrentText">2026年9月</span>
+              <span class="text-[9px] text-emerald-100 opacity-80 block scale-90">👈 左右滑动切换月份 👉</span>
+            </div>
+            <button onclick="changePreviewMonth(1)" class="px-2.5 py-0.5 bg-white/20 hover:bg-white/30 rounded-lg text-white font-medium flex items-center space-x-1 transition active:scale-95">
+              <span id="previewNextMonthBtn">10月</span>
+              <span>▶</span>
+            </button>
+          </div>
+
+          <!-- 核心数值展示 -->
+          <div class="flex justify-between items-end">
+            <div>
+              <p class="text-[11px] text-emerald-100 font-medium" id="scopeTitle">本周开销 (9.14 - 9.20)</p>
+              <h2 class="text-3xl font-extrabold tracking-tight mt-0.5" id="scopeTotalAmount">¥ 105.27</h2>
+            </div>
+            <div class="text-right pb-0.5">
+              <span class="text-[10px] bg-white/15 px-2 py-0.5 rounded-md text-emerald-100" id="scopeSubtitle">包含 4 笔消费</span>
+            </div>
+          </div>
+
+          <!-- 底部微观维度（天数、日均、打卡次数） -->
+          <div class="mt-3.5 pt-2.5 border-t border-white/20 flex justify-between text-[11px] text-emerald-100">
+            <span>记账天数：<strong class="text-white font-bold" id="scopeDays">2</strong> 天</span>
+            <span class="w-[1px] h-3 bg-white/20 self-center"></span>
+            <span>日均：<strong class="text-white font-bold" id="scopeAvg">¥ 15.04</strong></span>
+            <span class="w-[1px] h-3 bg-white/20 self-center"></span>
+            <span>打卡累计：<strong class="text-white font-bold" id="scopeHabits">4</strong> 次</span>
+          </div>
+        </div>
+
+        <!-- 每日生活时间轴卡片容器 (两级折叠展示：月 -> 周 -> 日) -->
+        <div id="dailyCardsContainer" class="space-y-3">
+
+          <!-- 快速全部折叠/展开工具栏 -->
+          <div class="flex justify-between items-center px-1 text-xs text-slate-400 font-medium">
+            <span id="timelineArchiveCountText">9月共 3 个周归档</span>
+            <button onclick="toggleAllPreviewCollapse()" id="toggleAllBtn" class="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg text-[11px] font-bold hover:bg-emerald-100 transition">
+              全部展开 ▼
+            </button>
+          </div>
+
+          <!-- 一级：2026年9月 分组 -->
+          <div class="month-block space-y-2.5" id="monthBlock-2026-09">
+            <!-- 一级月份标题栏 (在全部/本月维度下展开折叠) -->
+            <div onclick="toggleMonthCollapse('2026-09')" id="monthHeader-2026-09" class="bg-white rounded-2xl p-3 shadow-2xs border border-slate-200 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition">
+              <div class="flex items-center space-x-2">
+                <span class="w-2 h-4 bg-emerald-500 rounded-sm"></span>
+                <span class="font-extrabold text-slate-900 text-sm">2026年9月</span>
+                <span class="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-md font-medium">10天 · 22笔</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <span class="font-extrabold text-sm text-slate-900">¥ 1,280.00</span>
+                <span id="monthArrow-2026-09" class="text-xs text-slate-400 transition-transform duration-200">▼</span>
+              </div>
+            </div>
+
+            <!-- 月份内容体 (包含当月各周) -->
+            <div id="monthBody-2026-09" class="space-y-2.5">
+              
+              <!-- 二级：9月第3周 分组 -->
+              <div class="week-block bg-slate-100/60 p-2.5 rounded-2xl border border-slate-200/70 space-y-2" id="weekBlock-2026-09-W3">
+                <!-- 二级周标题栏 -->
+                <div onclick="toggleWeekCollapse('2026-09-W3')" class="bg-white rounded-xl p-2.5 shadow-2xs border border-slate-200/80 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition">
+                  <div class="flex items-center space-x-2 flex-wrap">
+                    <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                    <span class="font-bold text-xs text-slate-800">9月第3周</span>
+                    <span class="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">9.14 - 9.20</span>
+                    <span class="text-[10px] text-slate-400">2天 · 4笔</span>
+                  </div>
+                  <div class="flex items-center space-x-1.5">
+                    <span class="font-bold text-xs text-emerald-600">¥ 105.27</span>
+                    <span id="weekArrow-2026-09-W3" class="text-[10px] text-slate-400 transition-transform duration-200">▼</span>
+                  </div>
+                </div>
+
+                <!-- 该周包含的每日手帐卡片 -->
+                <div id="weekBody-2026-09-W3" class="space-y-2.5">
+                  <!-- 9.15 卡片 -->
+                  <div class="bg-white rounded-2xl p-3.5 shadow-2xs border border-slate-100 transition">
+                    <div class="flex justify-between items-center pb-2.5 border-b border-slate-100">
+                      <div class="flex items-center space-x-1.5">
+                        <span class="w-1.5 h-3.5 bg-emerald-500 rounded-full"></span>
+                        <span class="font-bold text-slate-800 text-sm">9月15日</span>
+                        <span class="text-[11px] text-slate-400">周二</span>
+                      </div>
+                      <div class="text-right">
+                        <span class="text-xs text-slate-400">合计</span>
+                        <span class="font-bold text-sm text-slate-900 ml-1">¥ 35.28</span>
+                      </div>
+                    </div>
+
+                    <div class="py-2 divide-y divide-slate-50 space-y-0.5">
+                      <div class="flex justify-between items-center py-1.5 text-xs">
+                        <div class="flex items-center space-x-2">
+                          <span class="w-7 h-7 rounded-xl bg-orange-50 flex items-center justify-center text-sm shadow-2xs">🍳</span>
+                          <span class="text-slate-700 font-medium">早饭</span>
+                        </div>
+                        <span class="font-semibold text-slate-800">¥ 14.39</span>
+                      </div>
+                      <div class="flex justify-between items-center py-1.5 text-xs">
+                        <div class="flex items-center space-x-2">
+                          <span class="w-7 h-7 rounded-xl bg-amber-50 flex items-center justify-center text-sm shadow-2xs">🍲</span>
+                          <span class="text-slate-700 font-medium">晚饭</span>
+                        </div>
+                        <span class="font-semibold text-slate-800">¥ 10.49</span>
+                      </div>
+                      <div class="flex justify-between items-center py-1.5 text-xs">
+                        <div class="flex items-center space-x-2">
+                          <span class="w-7 h-7 rounded-xl bg-purple-50 flex items-center justify-center text-sm shadow-2xs">🍢</span>
+                          <span class="text-slate-700 font-medium">夜宵</span>
+                        </div>
+                        <span class="font-semibold text-slate-800">¥ 10.40</span>
+                      </div>
+                    </div>
+
+                    <div class="mt-1 bg-amber-50/50 rounded-xl p-2.5 border border-amber-100 flex items-start space-x-2">
+                      <span class="text-sm">📖</span>
+                      <div class="flex-1">
+                        <div class="flex justify-between items-center">
+                          <span class="text-xs font-bold text-amber-900">《置身事内》</span>
+                          <span class="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-medium">读完第2章</span>
+                        </div>
+                        <p class="text-[11px] text-amber-700/90 mt-0.5">讲地方政府与城市投资，对经济运行逻辑有了全新理解。</p>
+                      </div>
+                    </div>
+
+                    <div class="mt-2.5 pt-2 border-t border-dashed border-slate-100 flex items-center justify-between text-xs">
+                      <span class="text-slate-400 text-[11px]">⚡ 今日打卡：</span>
+                      <div class="flex flex-wrap gap-1.5">
+                        <span class="px-2 py-0.5 bg-blue-50 text-blue-600 text-[11px] font-semibold rounded-lg border border-blue-100">🏃 健身</span>
+                        <span class="px-2 py-0.5 bg-purple-50 text-purple-600 text-[11px] font-semibold rounded-lg border border-purple-100">🌙 早睡</span>
+                        <span class="px-2 py-0.5 bg-cyan-50 text-cyan-600 text-[11px] font-semibold rounded-lg border border-cyan-100">💧 8杯水</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 9.14 卡片 -->
+                  <div class="bg-white rounded-2xl p-3.5 shadow-2xs border border-slate-100 transition">
+                    <div class="flex justify-between items-center pb-2.5 border-b border-slate-100">
+                      <div class="flex items-center space-x-1.5">
+                        <span class="w-1.5 h-3.5 bg-emerald-500 rounded-full"></span>
+                        <span class="font-bold text-slate-800 text-sm">9月14日</span>
+                        <span class="text-[11px] text-slate-400">周一</span>
+                      </div>
+                      <div class="text-right">
+                        <span class="text-xs text-slate-400">合计</span>
+                        <span class="font-bold text-sm text-slate-900 ml-1">¥ 69.99</span>
+                      </div>
+                    </div>
+
+                    <div class="py-2 divide-y divide-slate-50 space-y-0.5">
+                      <div class="flex justify-between items-center py-1.5 text-xs">
+                        <div class="flex items-center space-x-2">
+                          <span class="w-7 h-7 rounded-xl bg-emerald-50 flex items-center justify-center text-sm shadow-2xs">🛒</span>
+                          <span class="text-slate-700 font-medium">美团小象超市</span>
+                        </div>
+                        <span class="font-semibold text-slate-800">¥ 39.80</span>
+                      </div>
+                      <div class="flex justify-between items-center py-1.5 text-xs">
+                        <div class="flex items-center space-x-2">
+                          <span class="w-7 h-7 rounded-xl bg-orange-50 flex items-center justify-center text-sm shadow-2xs">🍳</span>
+                          <span class="text-slate-700 font-medium">早饭</span>
+                        </div>
+                        <span class="font-semibold text-slate-800">¥ 16.70</span>
+                      </div>
+                      <div class="flex justify-between items-center py-1.5 text-xs">
+                        <div class="flex items-center space-x-2">
+                          <span class="w-7 h-7 rounded-xl bg-amber-50 flex items-center justify-center text-sm shadow-2xs">🍲</span>
+                          <span class="text-slate-700 font-medium">晚饭</span>
+                        </div>
+                        <span class="font-semibold text-slate-800">¥ 13.49</span>
+                      </div>
+                    </div>
+
+                    <div class="mt-1 bg-sky-50/50 rounded-xl p-2.5 border border-sky-100 flex items-start space-x-2">
+                      <span class="text-sm">✈️</span>
+                      <div class="flex-1">
+                        <div class="flex justify-between items-center">
+                          <span class="text-xs font-bold text-sky-900">西湖断桥漫步</span>
+                          <span class="text-[10px] bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded font-medium">周末漫游</span>
+                        </div>
+                        <p class="text-[11px] text-sky-700/90 mt-0.5">傍晚微风徐徐，荷花刚谢，沿湖散步喝了杯茶。</p>
+                      </div>
+                    </div>
+
+                    <div class="mt-2.5 pt-2 border-t border-dashed border-slate-100 flex items-center justify-between text-xs">
+                      <span class="text-slate-400 text-[11px]">⚡ 今日打卡：</span>
+                      <div class="flex flex-wrap gap-1.5">
+                        <span class="px-2 py-0.5 bg-blue-50 text-blue-600 text-[11px] font-semibold rounded-lg border border-blue-100">🏃 健身</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 二级：9月第2周 分组 -->
+              <div class="week-block bg-slate-100/60 p-2.5 rounded-2xl border border-slate-200/70 space-y-2" id="weekBlock-2026-09-W2">
+                <div onclick="toggleWeekCollapse('2026-09-W2')" class="bg-white rounded-xl p-2.5 shadow-2xs border border-slate-200/80 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition">
+                  <div class="flex items-center space-x-2 flex-wrap">
+                    <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                    <span class="font-bold text-xs text-slate-800">9月第2周</span>
+                    <span class="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">9.7 - 9.13</span>
+                    <span class="text-[10px] text-slate-400">5天 · 11笔</span>
+                  </div>
+                  <div class="flex items-center space-x-1.5">
+                    <span class="font-bold text-xs text-emerald-600">¥ 420.00</span>
+                    <span id="weekArrow-2026-09-W2" class="text-[10px] text-slate-400 transition-transform duration-200">▼</span>
+                  </div>
+                </div>
+                <div id="weekBody-2026-09-W2" class="space-y-2 text-xs text-slate-400 text-center py-2 bg-white rounded-xl">
+                  <span>9.09 晚饭 ¥60 · 9.11 水果 ¥45 · 9.13 超市 ¥315</span>
+                </div>
+              </div>
+
+              <!-- 二级：9月第1周 分组 -->
+              <div class="week-block bg-slate-100/60 p-2.5 rounded-2xl border border-slate-200/70 space-y-2" id="weekBlock-2026-09-W1">
+                <div onclick="toggleWeekCollapse('2026-09-W1')" class="bg-white rounded-xl p-2.5 shadow-2xs border border-slate-200/80 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition">
+                  <div class="flex items-center space-x-2 flex-wrap">
+                    <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                    <span class="font-bold text-xs text-slate-800">9月第1周</span>
+                    <span class="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">8.31 - 9.6</span>
+                    <span class="text-[10px] text-slate-400">3天 · 7笔</span>
+                  </div>
+                  <div class="flex items-center space-x-1.5">
+                    <span class="font-bold text-xs text-emerald-600">¥ 754.73</span>
+                    <span id="weekArrow-2026-09-W1" class="text-[10px] text-slate-400 transition-transform duration-200">▼</span>
+                  </div>
+                </div>
+                <div id="weekBody-2026-09-W1" class="space-y-2 text-xs text-slate-400 text-center py-2 bg-white rounded-xl">
+                  <span>9.01 超市开学储备 ¥380 · 9.03 交通 ¥85 · 9.05 聚餐 ¥289.73</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- 一级：2026年8月 分组 (默认折叠) -->
+          <div class="month-block space-y-2.5" id="monthBlock-2026-08">
+            <div onclick="toggleMonthCollapse('2026-08')" id="monthHeader-2026-08" class="bg-white rounded-2xl p-3 shadow-2xs border border-slate-200 flex justify-between items-center cursor-pointer hover:bg-slate-50 transition">
+              <div class="flex items-center space-x-2">
+                <span class="w-2 h-4 bg-emerald-500 rounded-sm"></span>
+                <span class="font-extrabold text-slate-900 text-sm">2026年8月</span>
+                <span class="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-md font-medium">18天 · 36笔</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <span class="font-extrabold text-sm text-slate-900">¥ 2,850.00</span>
+                <span id="monthArrow-2026-08" class="text-xs text-slate-400 transition-transform duration-200 -rotate-90">▼</span>
+              </div>
+            </div>
+
+            <div id="monthBody-2026-08" class="hidden space-y-2.5">
+              <div class="week-block bg-slate-100/60 p-2.5 rounded-2xl border border-slate-200/70 space-y-2">
+                <div class="bg-white rounded-xl p-2.5 shadow-2xs border border-slate-200/80 flex justify-between items-center">
+                  <span class="font-bold text-xs text-slate-800">8月第5周 (8.24 - 8.30)</span>
+                  <span class="font-bold text-xs text-emerald-600">¥ 650.00</span>
+                </div>
+              </div>
+              <div class="week-block bg-slate-100/60 p-2.5 rounded-2xl border border-slate-200/70 space-y-2">
+                <div class="bg-white rounded-xl p-2.5 shadow-2xs border border-slate-200/80 flex justify-between items-center">
+                  <span class="font-bold text-xs text-slate-800">8月第4周 (8.17 - 8.23)</span>
+                  <span class="font-bold text-xs text-emerald-600">¥ 720.00</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ==================== TAB 2: 图表统计视图 (按日、按周、按月对比) ==================== -->
+      <div id="chartView" class="hidden space-y-3">
+        
+        <!-- 顶部核心周期指标三联卡片 (周开销 / 月开销 / 累计) -->
+        <div class="bg-white rounded-2xl p-3.5 shadow-2xs border border-slate-100 flex justify-between items-center divide-x divide-slate-100">
+          <div class="flex-1 text-center px-1">
+            <span class="text-[10px] text-slate-400 block mb-0.5 font-medium">本周开销</span>
+            <span class="text-sm font-black text-emerald-600">¥ 105.27</span>
+            <span class="text-[9px] text-slate-400 block scale-90">第38周</span>
+          </div>
+          <div class="flex-1 text-center px-1">
+            <span class="text-[10px] text-slate-400 block mb-0.5 font-medium">本月开销</span>
+            <span class="text-sm font-black text-slate-900">¥ 105.27</span>
+            <span class="text-[9px] text-slate-400 block scale-90">9月 (2天)</span>
+          </div>
+          <div class="flex-1 text-center px-1">
+            <span class="text-[10px] text-slate-400 block mb-0.5 font-medium">月度日均</span>
+            <span class="text-sm font-black text-amber-500">¥ 52.64</span>
+            <span class="text-[9px] text-slate-400 block scale-90">平稳节奏</span>
+          </div>
+        </div>
+
+        <!-- 走势对比图：支持【按日对比】/【按周对比】/【按月对比】 -->
+        <div class="bg-white rounded-2xl p-4 shadow-2xs border border-slate-100">
+          <div class="flex justify-between items-center mb-3">
+            <h3 class="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
+              <span class="w-1.5 h-3.5 bg-emerald-500 rounded-full"></span>
+              <span id="chartCardTitle">每日开销走势</span>
+            </h3>
+
+            <!-- 核心切换按钮组：按日 / 按周 / 按月 -->
+            <div class="flex bg-slate-100 p-0.5 rounded-xl text-[10px]">
+              <button onclick="switchChartDim('day')" id="dimBtnDay" class="px-2.5 py-1 rounded-lg font-bold bg-white text-emerald-700 shadow-2xs transition">
+                按日对比
+              </button>
+              <button onclick="switchChartDim('week')" id="dimBtnWeek" class="px-2.5 py-1 rounded-lg font-medium text-slate-500 hover:text-slate-900 transition">
+                按周对比
+              </button>
+              <button onclick="switchChartDim('month')" id="dimBtnMonth" class="px-2.5 py-1 rounded-lg font-medium text-slate-500 hover:text-slate-900 transition">
+                按月对比
+              </button>
+            </div>
+          </div>
+          
+          <!-- 柱状图展示容器 -->
+          <div id="barChartWrap" class="h-32 w-full flex items-end justify-around pt-3 pb-1 border-b border-slate-100 px-1">
+            <!-- 动态渲染柱子 -->
+          </div>
+
+          <!-- 柱状图底部走势总结 -->
+          <div class="mt-2.5 flex justify-between items-center text-[10px] text-slate-500" id="chartSummaryText">
+            <span>🔥 最高单日：9.14 (¥69.99)</span>
+            <span>🌿 最低单日：9.15 (¥35.28)</span>
+          </div>
+        </div>
+
+        <!-- 品类分布环形图卡片 -->
+        <div class="bg-white rounded-2xl p-4 shadow-2xs border border-slate-100">
+          <div class="flex justify-between items-center mb-2">
+            <h3 class="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
+              <span class="w-1.5 h-3.5 bg-teal-500 rounded-full"></span>
+              <span>消费品类占比</span>
+            </h3>
+            <span class="text-[10px] text-slate-400">共 5 个品类</span>
+          </div>
+
+          <div class="space-y-2 pt-2 text-xs">
+            <div>
+              <div class="flex justify-between text-[11px] mb-1">
+                <span class="font-medium text-slate-700">🛒 美团小象超市 (1笔)</span>
+                <span class="font-bold text-slate-900">¥ 39.80 (37.8%)</span>
+              </div>
+              <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                <div class="bg-emerald-500 h-full rounded-full" style="width: 37.8%;"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-[11px] mb-1">
+                <span class="font-medium text-slate-700">🍳 早饭 (2笔)</span>
+                <span class="font-bold text-slate-900">¥ 31.09 (29.5%)</span>
+              </div>
+              <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                <div class="bg-amber-500 h-full rounded-full" style="width: 29.5%;"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-[11px] mb-1">
+                <span class="font-medium text-slate-700">🍲 晚饭 (2笔)</span>
+                <span class="font-bold text-slate-900">¥ 23.98 (22.8%)</span>
+              </div>
+              <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                <div class="bg-indigo-500 h-full rounded-full" style="width: 22.8%;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 3. 右下角悬浮录入按钮 -->
+    <div class="absolute right-4 bottom-20 z-20">
+      <button onclick="openDirectAddModal('bill')" class="w-13 h-13 wechat-green text-white rounded-full shadow-lg shadow-emerald-600/35 flex items-center justify-center text-2xl hover:scale-105 active:scale-95 transition">
+        ＋
+      </button>
+    </div>
+
+    <!-- 4. 底部 TabBar -->
+    <div class="bg-white/95 backdrop-blur-md border-t border-slate-200/80 h-16 px-6 flex justify-around items-center absolute bottom-0 left-0 right-0 z-20">
+      <button onclick="switchTab('timeline')" id="tabTimeline" class="flex flex-col items-center space-y-1 wechat-green-text transition">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+          <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
+        </svg>
+        <span class="text-[10px] font-bold">手帐流水</span>
+      </button>
+
+      <button onclick="switchTab('chart')" id="tabChart" class="flex flex-col items-center space-y-1 text-slate-400 hover:text-slate-600 transition">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/>
+        </svg>
+        <span class="text-[10px] font-bold">统计分析</span>
+      </button>
+    </div>
+
+    <!-- 5. 录入弹窗：【记账排在最前】+【购物平台】+【自定义】 -->
+    <div id="addModal" class="hidden absolute inset-0 bg-slate-900/50 backdrop-blur-xs z-30 flex flex-col justify-end transition-all">
+      <div class="bg-white rounded-t-3xl p-4 sm:p-5 shadow-2xl border-t border-slate-100 max-h-[90vh] flex flex-col space-y-3.5 animate-in slide-in-from-bottom">
+        
+        <div class="flex justify-between items-center pb-1">
+          <div class="flex space-x-1 bg-slate-100 p-1 rounded-2xl overflow-x-auto">
+            <button onclick="switchAddMode('bill')" id="modeBtnBill" class="px-3 py-1 text-xs font-bold rounded-xl bg-white text-emerald-700 shadow-2xs transition whitespace-nowrap">
+              💰 记账
+            </button>
+            <button onclick="switchAddMode('habit')" id="modeBtnHabit" class="px-3 py-1 text-xs font-medium rounded-xl text-slate-600 hover:text-slate-900 transition whitespace-nowrap">
+              ⚡ 打卡
+            </button>
+            <button onclick="switchAddMode('book')" id="modeBtnBook" class="px-3 py-1 text-xs font-medium rounded-xl text-slate-600 hover:text-slate-900 transition whitespace-nowrap">
+              📖 读书
+            </button>
+            <button onclick="switchAddMode('travel')" id="modeBtnTravel" class="px-3 py-1 text-xs font-medium rounded-xl text-slate-600 hover:text-slate-900 transition whitespace-nowrap">
+              ✈️ 旅游
+            </button>
+            <button onclick="switchAddMode('import')" id="modeBtnImport" class="px-3 py-1 text-xs font-medium rounded-xl text-slate-600 hover:text-slate-900 transition whitespace-nowrap">
+              📥 导入/导出
+            </button>
+          </div>
+          <button onclick="closeDirectAddModal()" class="w-6 h-6 rounded-full bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center text-xs flex-shrink-0">✕</button>
+        </div>
+
+        <!-- 记账模式 -->
+        <div id="modeSectionBill" class="space-y-3">
+          <div class="bg-emerald-50/60 p-3 rounded-2xl border border-emerald-100">
+            <span class="text-[11px] text-emerald-700 font-medium block mb-1">金额 (元)</span>
+            <div class="flex items-center text-2xl font-bold text-slate-800">
+              <span class="text-emerald-600 mr-1.5 font-medium">¥</span>
+              <input type="number" step="0.01" id="billAmountInput" placeholder="0.00" class="w-full bg-transparent border-none outline-none font-bold text-slate-900">
+            </div>
+          </div>
+
+          <div>
+            <span class="text-[11px] text-slate-400 block mb-1.5 font-medium">点选消费品类：</span>
+            <div class="grid grid-cols-5 gap-1.5 text-xs" id="categoryGrid">
+              <button onclick="selectCategory('早饭', '🍳')" class="cat-pill p-1.5 rounded-xl bg-emerald-50 border-2 border-emerald-500 text-emerald-800 flex flex-col items-center space-y-0.5">
+                <span class="text-base">🍳</span>
+                <span class="font-medium text-[10px]">早饭</span>
+              </button>
+              <button onclick="selectCategory('午饭', '🍱')" class="cat-pill p-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 flex flex-col items-center space-y-0.5">
+                <span class="text-base">🍱</span>
+                <span class="font-medium text-[10px]">午饭</span>
+              </button>
+              <button onclick="selectCategory('晚饭', '🍲')" class="cat-pill p-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 flex flex-col items-center space-y-0.5">
+                <span class="text-base">🍲</span>
+                <span class="font-medium text-[10px]">晚饭</span>
+              </button>
+              <button onclick="selectCategory('夜宵', '🍢')" class="cat-pill p-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 flex flex-col items-center space-y-0.5">
+                <span class="text-base">🍢</span>
+                <span class="font-medium text-[10px]">夜宵</span>
+              </button>
+              <button onclick="selectCategory('美团小象超市', '🛒')" class="cat-pill p-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 flex flex-col items-center space-y-0.5">
+                <span class="text-base">🛒</span>
+                <span class="font-medium text-[10px]">小象超市</span>
+              </button>
+              <button onclick="selectCategory('购物平台', '🛍️')" class="cat-pill p-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 flex flex-col items-center space-y-0.5">
+                <span class="text-base">🛍️</span>
+                <span class="font-medium text-[10px]">购物平台</span>
+              </button>
+              <button onclick="selectCategory('饮品咖啡', '☕')" class="cat-pill p-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 flex flex-col items-center space-y-0.5">
+                <span class="text-base">☕</span>
+                <span class="font-medium text-[10px]">饮品咖啡</span>
+              </button>
+              <button onclick="selectCategory('打车交通', '🚖')" class="cat-pill p-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 flex flex-col items-center space-y-0.5">
+                <span class="text-base">🚖</span>
+                <span class="font-medium text-[10px]">打车交通</span>
+              </button>
+              <button onclick="selectCategory('水果零食', '🍎')" class="cat-pill p-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 flex flex-col items-center space-y-0.5">
+                <span class="text-base">🍎</span>
+                <span class="font-medium text-[10px]">水果零食</span>
+              </button>
+              <button onclick="selectCategory('自定义', '➕')" class="cat-pill p-1.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-800 flex flex-col items-center space-y-0.5">
+                <span class="text-base">➕</span>
+                <span class="font-bold text-[10px]">自定义</span>
+              </button>
+            </div>
+          </div>
+
+          <div id="customCatInputGroup" class="hidden">
+            <span class="text-[11px] text-amber-600 font-medium block mb-1">输入自定义分类名：</span>
+            <input type="text" id="customCatInput" placeholder="如：理发、电影、数码、猫粮..." class="w-full text-xs bg-amber-50/40 border border-amber-300 rounded-xl px-3 py-2 text-slate-800">
+          </div>
+
+          <div>
+            <input type="text" id="billRemarkInput" placeholder="备注（可选）" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-700">
+          </div>
+
+          <button onclick="saveBillDirect()" class="w-full py-2.5 rounded-2xl text-xs font-bold text-white wechat-green hover:bg-emerald-600 active:scale-98 transition shadow-sm">
+            ✓ 保存这笔账单
+          </button>
+        </div>
+
+        <!-- 打卡模式 -->
+        <div id="modeSectionHabit" class="hidden space-y-3 text-xs">
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="alert('✅ 健身打卡成功')" class="p-3 bg-blue-50 border border-blue-200 rounded-2xl text-left">
+              <span class="text-sm font-black text-blue-700 block">🏃 健身</span>
+              <span class="text-[10px] text-blue-400">点击打卡</span>
+            </button>
+            <button onclick="alert('✅ 早睡打卡成功')" class="p-3 bg-purple-50 border border-purple-200 rounded-2xl text-left">
+              <span class="text-sm font-black text-purple-700 block">🌙 早睡</span>
+              <span class="text-[10px] text-purple-400">点击打卡</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 读书模式 -->
+        <div id="modeSectionBook" class="hidden space-y-3 text-xs">
+          <input type="text" placeholder="书名：《置身事内》" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold">
+          <textarea placeholder="读书感悟..." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3" rows="2"></textarea>
+          <button onclick="alert('✅ 读书随记已保存'); closeDirectAddModal();" class="w-full py-2.5 rounded-2xl text-xs font-bold text-white bg-amber-500">
+            📖 保存读书足迹
+          </button>
+        </div>
+
+        <!-- 旅游模式 -->
+        <div id="modeSectionTravel" class="hidden space-y-3 text-xs">
+          <input type="text" placeholder="目的地：如 杭州西湖" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-bold">
+          <textarea placeholder="游玩见闻..." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3" rows="2"></textarea>
+          <button onclick="alert('✅ 旅游漫记已保存'); closeDirectAddModal();" class="w-full py-2.5 rounded-2xl text-xs font-bold text-white bg-sky-600">
+            ✈️ 保存旅途足迹
+          </button>
+        </div>
+
+        <!-- 5. 批量导入/导出模式 -->
+        <div id="modeSectionImport" class="hidden space-y-3 text-xs">
+          <div class="bg-emerald-50 p-2.5 rounded-xl border border-emerald-100 text-[11px] text-emerald-800">
+            💡 智能识别日期（如 9.14）、品类与金额（如 早饭 16.7 或 美团小象超市:39.8）。
+          </div>
+          <textarea id="importTextarea" rows="6" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-800 font-mono" placeholder="在此粘贴文本..."></textarea>
+          <div class="flex justify-end space-x-2">
+            <button onclick="fillSampleText()" class="px-3 py-1.5 bg-slate-100 text-slate-600 text-xs font-medium rounded-xl">填入示例</button>
+            <button onclick="confirmImport()" class="px-4 py-1.5 wechat-green text-white text-xs font-bold rounded-xl shadow-xs">✓ 确认解析导入</button>
+          </div>
+
+          <!-- 数据导出备份区 -->
+          <div class="mt-4 pt-3 border-t border-dashed border-slate-200 space-y-1.5">
+            <span class="text-[11px] font-bold text-slate-700 block">📤 导出备份：</span>
+            <p class="text-[10px] text-slate-400">将当前全部手帐记录导出为纯文本格式，方便电脑保存或换机迁移。</p>
+            <button onclick="alert('📤 已将全部手帐文本复制到剪贴板！');" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition">
+              📋 复制全部手帐文本到剪贴板
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Tab 切换：手帐流水 vs 统计分析
+    function switchTab(tab) {
+      const timelineView = document.getElementById('timelineView');
+      const chartView = document.getElementById('chartView');
+      const tabTimeline = document.getElementById('tabTimeline');
+      const tabChart = document.getElementById('tabChart');
+
+      if (tab === 'timeline') {
+        timelineView.classList.remove('hidden');
+        chartView.classList.add('hidden');
+        tabTimeline.className = 'flex flex-col items-center space-y-1 wechat-green-text transition';
+        tabChart.className = 'flex flex-col items-center space-y-1 text-slate-400 hover:text-slate-600 transition';
+      } else {
+        timelineView.classList.add('hidden');
+        chartView.classList.remove('hidden');
+        tabChart.className = 'flex flex-col items-center space-y-1 wechat-green-text transition';
+        tabTimeline.className = 'flex flex-col items-center space-y-1 text-slate-400 hover:text-slate-600 transition';
+        renderBarChart('day'); // 默认展示按日走势
+      }
+    }
+
+    // ================== 1. 首页顶部卡片时间范围切换与月度左右滑动 ==================
+    let currentPreviewYear = 2026;
+    let currentPreviewMonth = 9;
+    let currentScopeMode = 'week';
+    let isAllCollapsed = false;
+
+    const MONTH_PREVIEW_DATA = {
+      8: {
+        title: '2026年8月开销与生活手记',
+        amount: '¥ 2,850.00',
+        sub: '包含 36 笔消费',
+        days: '18',
+        avg: '¥ 158.33',
+        habits: '24'
+      },
+      9: {
+        title: '2026年9月开销与生活手记',
+        amount: '¥ 1,280.00',
+        sub: '包含 22 笔消费',
+        days: '10',
+        avg: '¥ 128.00',
+        habits: '18'
+      },
+      10: {
+        title: '2026年10月开销与生活手记',
+        amount: '¥ 0.00',
+        sub: '包含 0 笔消费',
+        days: '0',
+        avg: '¥ 0.00',
+        habits: '0'
+      }
+    };
+
+    const SCOPE_DATA = {
+      week: {
+        title: '本周开销 (9.14 - 9.20)',
+        amount: '¥ 105.27',
+        sub: '第 38 周 · 4 笔消费',
+        days: '2',
+        avg: '¥ 15.04',
+        habits: '4'
+      },
+      month: MONTH_PREVIEW_DATA[9],
+      all: {
+        title: '2026 年度累计生活手记',
+        amount: '¥ 4,130.00',
+        sub: '累计 58 笔消费',
+        days: '28',
+        avg: '¥ 147.50',
+        habits: '42'
+      }
+    };
+
+    function updateMonthNavRow() {
+      const prevM = currentPreviewMonth === 1 ? 12 : currentPreviewMonth - 1;
+      const nextM = currentPreviewMonth === 12 ? 1 : currentPreviewMonth + 1;
+      document.getElementById('previewPrevMonthBtn').innerText = `${prevM}月`;
+      document.getElementById('previewNextMonthBtn').innerText = `${nextM}月`;
+      document.getElementById('previewNavCurrentText').innerText = `${currentPreviewYear}年${currentPreviewMonth}月`;
+    }
+
+    function changePreviewMonth(delta) {
+      currentPreviewMonth += delta;
+      if (currentPreviewMonth > 12) {
+        currentPreviewMonth = 1;
+        currentPreviewYear += 1;
+      } else if (currentPreviewMonth < 1) {
+        currentPreviewMonth = 12;
+        currentPreviewYear -= 1;
+      }
+      updateMonthNavRow();
+
+      // 如果当前不是本月模式，自动切换到本月模式
+      if (currentScopeMode !== 'month') {
+        switchTimelineScope('month');
+      } else {
+        renderScopeData();
+      }
+    }
+
+    function renderScopeData() {
+      let data = SCOPE_DATA[currentScopeMode];
+      if (currentScopeMode === 'month') {
+        data = MONTH_PREVIEW_DATA[currentPreviewMonth] || {
+          title: `${currentPreviewYear}年${currentPreviewMonth}月开销与生活手记`,
+          amount: '¥ 0.00',
+          sub: '包含 0 笔消费',
+          days: '0',
+          avg: '¥ 0.00',
+          habits: '0'
+        };
+      }
+
+      document.getElementById('scopeTitle').innerText = data.title;
+      document.getElementById('scopeTotalAmount').innerText = data.amount;
+      document.getElementById('scopeSubtitle').innerText = data.sub;
+      document.getElementById('scopeDays').innerText = data.days;
+      document.getElementById('scopeAvg').innerText = data.avg;
+      document.getElementById('scopeHabits').innerText = data.habits;
+
+      // 更新可见月份列表
+      const m9 = document.getElementById('monthBlock-2026-09');
+      const m8 = document.getElementById('monthBlock-2026-08');
+      const countText = document.getElementById('timelineArchiveCountText');
+      const monthHeader9 = document.getElementById('monthHeader-2026-09');
+
+      if (currentScopeMode === 'week') {
+        m9.classList.remove('hidden');
+        m8.classList.add('hidden');
+        monthHeader9.classList.add('hidden'); // 本周模式下直接展示本周流水
+        countText.innerText = '本周流水归档';
+      } else if (currentScopeMode === 'month') {
+        monthHeader9.classList.remove('hidden');
+        if (currentPreviewMonth === 9) {
+          m9.classList.remove('hidden');
+          m8.classList.add('hidden');
+          countText.innerText = '9月共 3 个周归档';
+        } else if (currentPreviewMonth === 8) {
+          m9.classList.add('hidden');
+          m8.classList.remove('hidden');
+          countText.innerText = '8月共 2 个周归档';
+        } else {
+          m9.classList.add('hidden');
+          m8.classList.add('hidden');
+          countText.innerText = `${currentPreviewMonth}月暂无手帐记录`;
+        }
+      } else {
+        // all 模式全部展示
+        m9.classList.remove('hidden');
+        m8.classList.remove('hidden');
+        monthHeader9.classList.remove('hidden');
+        countText.innerText = '共 2 个月份归档';
+      }
+    }
+
+    function switchTimelineScope(scope) {
+      currentScopeMode = scope;
+      const navRow = document.getElementById('previewMonthNavRow');
+
+      // 仅在 month 模式下显示左右切换月份导航条
+      if (scope === 'month') {
+        navRow.classList.remove('hidden');
+        updateMonthNavRow();
+      } else {
+        navRow.classList.add('hidden');
+      }
+
+      // 切换按钮样式
+      [
+        { id: 'scopeBtnMonth', s: 'month' },
+        { id: 'scopeBtnWeek', s: 'week' },
+        { id: 'scopeBtnAll', s: 'all' }
+      ].forEach(b => {
+        const el = document.getElementById(b.id);
+        if (b.s === scope) {
+          el.className = 'px-2.5 py-1 rounded-lg font-bold bg-white text-emerald-800 shadow-2xs transition whitespace-nowrap';
+        } else {
+          el.className = 'px-2.5 py-1 rounded-lg font-medium text-emerald-100 hover:text-white transition whitespace-nowrap';
+        }
+      });
+
+      renderScopeData();
+    }
+
+    // ================== 二级折叠展开逻辑 ==================
+    function toggleMonthCollapse(key) {
+      const body = document.getElementById(`monthBody-${key}`);
+      const arrow = document.getElementById(`monthArrow-${key}`);
+      if (!body) return;
+      const isHidden = body.classList.contains('hidden');
+      if (isHidden) {
+        body.classList.remove('hidden');
+        if (arrow) arrow.style.transform = 'rotate(0deg)';
+      } else {
+        body.classList.add('hidden');
+        if (arrow) arrow.style.transform = 'rotate(-90deg)';
+      }
+    }
+
+    function toggleWeekCollapse(key) {
+      const body = document.getElementById(`weekBody-${key}`);
+      const arrow = document.getElementById(`weekArrow-${key}`);
+      if (!body) return;
+      const isHidden = body.classList.contains('hidden');
+      if (isHidden) {
+        body.classList.remove('hidden');
+        if (arrow) arrow.style.transform = 'rotate(0deg)';
+      } else {
+        body.classList.add('hidden');
+        if (arrow) arrow.style.transform = 'rotate(-90deg)';
+      }
+    }
+
+    function toggleAllPreviewCollapse() {
+      isAllCollapsed = !isAllCollapsed;
+      const btn = document.getElementById('toggleAllBtn');
+      btn.innerText = isAllCollapsed ? '全部展开 ▼' : '全部折叠 ▲';
+
+      ['2026-09', '2026-08'].forEach(mKey => {
+        const body = document.getElementById(`monthBody-${mKey}`);
+        const arrow = document.getElementById(`monthArrow-${mKey}`);
+        if (body) {
+          if (isAllCollapsed) {
+            body.classList.add('hidden');
+            if (arrow) arrow.style.transform = 'rotate(-90deg)';
+          } else {
+            body.classList.remove('hidden');
+            if (arrow) arrow.style.transform = 'rotate(0deg)';
+          }
+        }
+      });
+
+      ['2026-09-W3', '2026-09-W2', '2026-09-W1'].forEach(wKey => {
+        const body = document.getElementById(`weekBody-${wKey}`);
+        const arrow = document.getElementById(`weekArrow-${wKey}`);
+        if (body) {
+          if (isAllCollapsed) {
+            body.classList.add('hidden');
+            if (arrow) arrow.style.transform = 'rotate(-90deg)';
+          } else {
+            body.classList.remove('hidden');
+            if (arrow) arrow.style.transform = 'rotate(0deg)';
+          }
+        }
+      });
+    }
+
+    // ================== 手势左右滑动切换月份 ==================
+    (function initCardSwipe() {
+      const card = document.getElementById('overviewCard');
+      let touchStartX = 0;
+      let touchStartY = 0;
+      let touchStartTime = 0;
+
+      card.addEventListener('touchstart', (e) => {
+        if (e.touches && e.touches.length > 0) {
+          touchStartX = e.touches[0].clientX;
+          touchStartY = e.touches[0].clientY;
+          touchStartTime = Date.now();
+        }
+      }, { passive: true });
+
+      card.addEventListener('touchend', (e) => {
+        if (!touchStartX || !e.changedTouches || e.changedTouches.length === 0) return;
+        const dx = e.changedTouches[0].clientX - touchStartX;
+        const dy = e.changedTouches[0].clientY - touchStartY;
+        const dt = Date.now() - touchStartTime;
+        touchStartX = 0;
+
+        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.3 && dt < 600) {
+          if (dx > 0) {
+            // 向右滑 -> 上一个月
+            changePreviewMonth(-1);
+          } else {
+            // 向左滑 -> 下一个月
+            changePreviewMonth(1);
+          }
+        }
+      }, { passive: true });
+    })();
+
+    // ================== 2. 图表走势对比范围切换 (按日 vs 按周 vs 按月) ==================
+    const CHART_DIMENSIONS = {
+      day: {
+        title: '每日开销走势',
+        summary: '<span>🔥 最高单日：9.14 (¥69.99)</span><span>🌿 最低单日：9.15 (¥35.28)</span>',
+        bars: [
+          { label: '9.14', amount: 69.99, max: 80, height: 75, color: 'bg-emerald-500' },
+          { label: '9.15', amount: 35.28, max: 80, height: 42, color: 'bg-emerald-400' }
+        ]
+      },
+      week: {
+        title: '每周开销走势对比',
+        summary: '<span>🔥 消费最高周：第38周 (¥323.57)</span><span>🌿 周均开销：¥139.19</span>',
+        bars: [
+          { label: '第28周', amount: 70.50, height: 45, color: 'bg-emerald-400' },
+          { label: '第29周', amount: 88.10, height: 55, color: 'bg-emerald-400' },
+          { label: '第30周', amount: 211.00, height: 85, color: 'bg-emerald-500' },
+          { label: '第31周', amount: 66.40, height: 42, color: 'bg-emerald-400' },
+          { label: '第32周', amount: 80.50, height: 50, color: 'bg-emerald-400' },
+          { label: '第33周', amount: 121.90, height: 65, color: 'bg-emerald-400' },
+          { label: '第34周', amount: 297.50, height: 95, color: 'bg-emerald-500' },
+          { label: '第35周', amount: 108.80, height: 60, color: 'bg-emerald-400' },
+          { label: '第36周', amount: 62.50, height: 40, color: 'bg-emerald-400' },
+          { label: '第37周', amount: 102.30, height: 58, color: 'bg-emerald-400' },
+          { label: '第38周', amount: 323.57, height: 105, color: 'bg-emerald-600' }
+        ]
+      },
+      month: {
+        title: '每月开销走势对比',
+        summary: '<span>🔥 消费最高月：8月 (¥608.70)</span><span>🌿 月均开销：¥511.02</span>',
+        bars: [
+          { label: '7月', amount: 436.00, height: 72, color: 'bg-emerald-400' },
+          { label: '8月', amount: 608.70, height: 100, color: 'bg-emerald-500' },
+          { label: '9月', amount: 488.37, height: 80, color: 'bg-emerald-600' }
+        ]
+      }
+    };
+
+    function switchChartDim(dim) {
+      ['Day', 'Week', 'Month'].forEach(d => {
+        const btn = document.getElementById(`dimBtn${d}`);
+        if (d.toLowerCase() === dim) {
+          btn.className = 'px-2.5 py-1 rounded-lg font-bold bg-white text-emerald-700 shadow-2xs transition';
+        } else {
+          btn.className = 'px-2.5 py-1 rounded-lg font-medium text-slate-500 hover:text-slate-900 transition';
+        }
+      });
+      renderBarChart(dim);
+    }
+
+    function renderBarChart(dim) {
+      const cfg = CHART_DIMENSIONS[dim];
+      document.getElementById('chartCardTitle').innerText = cfg.title;
+      document.getElementById('chartSummaryText').innerHTML = cfg.summary;
+
+      const wrap = document.getElementById('barChartWrap');
+      wrap.className = 'h-32 w-full flex items-end overflow-x-auto pt-3 pb-1 border-b border-slate-100 px-1 scroll-smooth';
+      wrap.innerHTML = cfg.bars.map(b => `
+        <div class="flex flex-col items-center space-y-1 flex-shrink-0 w-16 mx-1">
+          <span class="text-[10px] font-extrabold text-slate-700 whitespace-nowrap">¥${b.amount}</span>
+          <div class="w-7 ${b.color} rounded-t-md bar-transition" style="height: ${b.height}px;"></div>
+          <span class="text-[10px] text-slate-500 font-medium whitespace-nowrap">${b.label}</span>
+        </div>
+      `).join('');
+      setTimeout(() => {
+        wrap.scrollLeft = wrap.scrollWidth;
+      }, 50);
+    }
+
+    // ================== 录入弹窗逻辑 ==================
+    let currentCategory = '早饭';
+    let currentEmoji = '🍳';
+
+    function openDirectAddModal(mode) {
+      document.getElementById('addModal').classList.remove('hidden');
+      switchAddMode(mode || 'bill');
+    }
+    function closeDirectAddModal() {
+      document.getElementById('addModal').classList.add('hidden');
+    }
+
+    function switchAddMode(mode) {
+      ['bill', 'habit', 'book', 'travel', 'import'].forEach(m => {
+        const sec = document.getElementById(`modeSection${m.charAt(0).toUpperCase() + m.slice(1)}`);
+        const btn = document.getElementById(`modeBtn${m.charAt(0).toUpperCase() + m.slice(1)}`);
+        if (m === mode) {
+          sec.classList.remove('hidden');
+          btn.className = 'px-3 py-1 text-xs font-bold rounded-xl bg-white text-emerald-700 shadow-2xs transition whitespace-nowrap';
+        } else {
+          sec.classList.add('hidden');
+          btn.className = 'px-3 py-1 text-xs font-medium rounded-xl text-slate-600 hover:text-slate-900 transition whitespace-nowrap';
+        }
+      });
+    }
+
+    function selectCategory(name, emoji) {
+      currentCategory = name;
+      currentEmoji = emoji;
+      const pills = document.querySelectorAll('#categoryGrid .cat-pill');
+      pills.forEach(pill => {
+        if (pill.innerText.includes(name)) {
+          pill.className = 'cat-pill p-1.5 rounded-xl bg-emerald-50 border-2 border-emerald-500 text-emerald-800 flex flex-col items-center space-y-0.5 transition';
+        } else {
+          pill.className = 'cat-pill p-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 flex flex-col items-center space-y-0.5 transition';
+        }
+      });
+
+      const customGroup = document.getElementById('customCatInputGroup');
+      if (name === '自定义') {
+        customGroup.classList.remove('hidden');
+        document.getElementById('customCatInput').focus();
+      } else {
+        customGroup.classList.add('hidden');
+      }
+    }
+
+    function saveBillDirect() {
+      const amount = parseFloat(document.getElementById('billAmountInput').value);
+      if (!amount || isNaN(amount) || amount <= 0) {
+        alert('请输入有效金额');
+        return;
+      }
+      alert(`✅ 记账成功：${currentCategory} ¥${amount.toFixed(2)}`);
+      closeDirectAddModal();
+    }
+
+    // ================== 导入逻辑 ==================
+    function fillSampleText() {
+      document.getElementById('importTextarea').value = `9.14\n美团小象超市:39.8\n早饭 16.7\n晚饭 13.49\n合计 69.99\n\n9.15\n早饭 14.39\n晚饭 10.49\n夜宵 10.4\n合计 35.28`;
+    }
+    function confirmImport() {
+      alert('✅ 批量导入成功！已更新本月与各周统计');
+      closeDirectAddModal();
+    }
+
+    // 默认初始化
+    window.onload = function() {
+      renderBarChart('day');
+    };
+  </script>
+</body>
+</html>

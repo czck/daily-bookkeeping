@@ -1,0 +1,484 @@
+/* pages/chart/chart.wxss */
+
+.container {
+  padding: 24rpx;
+  padding-bottom: 60rpx;
+}
+
+/* 1. 顶部核心指标三联卡 */
+.summary-triple-card {
+  background-color: #ffffff;
+  border-radius: 28rpx;
+  padding: 28rpx 16rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.02);
+  border: 1rpx solid #f1f5f9;
+  margin-bottom: 24rpx;
+}
+
+.triple-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4rpx;
+}
+
+.triple-label {
+  font-size: 20rpx;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.triple-val {
+  font-size: 32rpx;
+  font-weight: 900;
+  letter-spacing: -0.5rpx;
+}
+
+.text-green { color: #07C160; }
+.text-dark  { color: #0f172a; }
+.text-amber { color: #f59e0b; }
+
+.triple-sub {
+  font-size: 18rpx;
+  color: #94a3b8;
+}
+
+.triple-divider {
+  width: 1rpx;
+  height: 48rpx;
+  background-color: #f1f5f9;
+}
+
+/* 2. 通用图表卡片 */
+.chart-card {
+  background-color: #ffffff;
+  border-radius: 28rpx;
+  padding: 32rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.02);
+  border: 1rpx solid #f1f5f9;
+  margin-bottom: 24rpx;
+}
+
+.card-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28rpx;
+}
+
+.title-left {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.indicator {
+  width: 8rpx;
+  height: 28rpx;
+  border-radius: 4rpx;
+}
+
+.bg-green { background-color: #07C160; }
+.bg-teal  { background-color: #0d9488; }
+.bg-purple{ background-color: #9333ea; }
+
+.card-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #0f172a;
+}
+
+/* 维度切换按钮组 */
+.dim-tabs {
+  display: flex;
+  background-color: #f1f5f9;
+  padding: 4rpx;
+  border-radius: 16rpx;
+  gap: 4rpx;
+}
+
+.dim-tab {
+  padding: 6rpx 16rpx;
+  border-radius: 12rpx;
+  font-size: 20rpx;
+  color: #64748b;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.dim-tab-active {
+  background-color: #ffffff;
+  color: #07C160;
+  font-weight: bold;
+  box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.06);
+}
+
+/* 柱状图辅助操作栏与列布局 */
+.chart-sub-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+
+.chart-scroll-hint {
+  font-size: 20rpx;
+  color: #059669;
+  background-color: #ecfdf5;
+  padding: 6rpx 16rpx;
+  border-radius: 12rpx;
+  font-weight: 500;
+}
+
+/* 排序切换选项卡 (按时间 / 按消费) */
+.sort-tabs {
+  display: flex;
+  background-color: #f1f5f9;
+  padding: 4rpx;
+  border-radius: 14rpx;
+  gap: 4rpx;
+}
+
+.sort-tab {
+  padding: 4rpx 14rpx;
+  border-radius: 10rpx;
+  font-size: 20rpx;
+  color: #64748b;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.sort-tab-active {
+  background-color: #ffffff;
+  color: #0284c7;
+  font-weight: bold;
+  box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.06);
+}
+
+.bar-chart-scroll {
+  width: 100%;
+  height: 320rpx;
+  border-bottom: 1rpx solid #f1f5f9;
+  white-space: nowrap;
+}
+
+.bar-chart-inner {
+  display: flex;
+  align-items: flex-end;
+  min-width: 100%;
+  height: 100%;
+  padding: 10rpx 10rpx 16rpx 10rpx;
+  box-sizing: border-box;
+}
+
+.bar-chart-inner-few {
+  justify-content: space-around;
+}
+
+.bar-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  width: 120rpx;
+  margin: 0 8rpx;
+  height: 100%;
+}
+
+.bar-amount {
+  font-size: 20rpx;
+  font-weight: bold;
+  color: #475569;
+  margin-bottom: 10rpx;
+  white-space: nowrap;
+}
+
+.bar-track {
+  width: 40rpx;
+  height: 160rpx;
+  display: flex;
+  align-items: flex-end;
+  background-color: #f8fafc;
+  border-radius: 12rpx 12rpx 0 0;
+}
+
+.bar-fill {
+  width: 100%;
+  background: linear-gradient(180deg, #07C160 0%, #10b981 100%);
+  border-radius: 12rpx 12rpx 0 0;
+  transition: height 0.3s ease;
+}
+
+.bar-date {
+  font-size: 22rpx;
+  color: #64748b;
+  margin-top: 12rpx;
+  white-space: nowrap;
+}
+
+/* 周统计所属月份横线与居中月份标识 */
+.week-month-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin-top: 10rpx;
+}
+
+.week-month-line {
+  height: 4rpx;
+  width: calc(100% + 16rpx);
+  margin-left: -8rpx;
+  margin-right: -8rpx;
+  background-color: #059669;
+  border-radius: 0;
+}
+
+.week-month-line.month-line-start {
+  width: calc(100% + 8rpx);
+  margin-left: 0;
+  margin-right: -8rpx;
+  border-top-left-radius: 4rpx;
+  border-bottom-left-radius: 4rpx;
+}
+
+.week-month-line.month-line-end {
+  width: calc(100% + 8rpx);
+  margin-left: -8rpx;
+  margin-right: 0;
+  border-top-right-radius: 4rpx;
+  border-bottom-right-radius: 4rpx;
+}
+
+.week-month-line.month-line-solo {
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+  border-radius: 4rpx;
+}
+
+.week-month-text {
+  font-size: 18rpx;
+  font-weight: bold;
+  color: #059669;
+  margin-top: 6rpx;
+  height: 24rpx;
+  line-height: 24rpx;
+  white-space: nowrap;
+}
+
+.month-text-hidden {
+  visibility: hidden;
+}
+
+.month-text-show {
+  visibility: visible;
+}
+
+.chart-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 18rpx;
+  font-size: 22rpx;
+  color: #94a3b8;
+}
+
+/* 3. 环形图区域 */
+.pie-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24rpx;
+}
+
+.canvas-box {
+  position: relative;
+  width: 240rpx;
+  height: 240rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pie-canvas {
+  width: 240rpx;
+  height: 240rpx;
+}
+
+.canvas-center-info {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.center-sub {
+  font-size: 18rpx;
+  color: #94a3b8;
+}
+
+.center-val {
+  font-size: 24rpx;
+  font-weight: bold;
+  color: #1e293b;
+  margin-top: 4rpx;
+}
+
+.pie-legend {
+  flex: 1;
+  padding-left: 30rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+}
+
+.legend-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 22rpx;
+}
+
+.legend-left {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.legend-dot {
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 50%;
+}
+
+.legend-name {
+  color: #475569;
+}
+
+.legend-amount {
+  font-weight: bold;
+  color: #1e293b;
+}
+
+.legend-percent {
+  color: #94a3b8;
+  font-size: 20rpx;
+  margin-left: 6rpx;
+}
+
+/* 进度条清单 */
+.cat-progress-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  padding-top: 10rpx;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 22rpx;
+  color: #64748b;
+  margin-bottom: 6rpx;
+}
+
+.progress-bar-bg {
+  width: 100%;
+  height: 12rpx;
+  background-color: #f1f5f9;
+  border-radius: 6rpx;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 6rpx;
+  transition: width 0.3s ease;
+}
+
+/* 4. 自定义打卡网格 (自适应格数) */
+.habit-grid-4 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+}
+
+.habit-card {
+  border-radius: 20rpx;
+  padding: 22rpx 20rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.habit-card-custom {
+  background-color: #f8fafc;
+  border: 1rpx solid #e2e8f0;
+}
+
+.habit-card-custom .habit-badge {
+  background-color: #ecfdf5;
+  color: #047857;
+}
+
+.habit-card-custom .habit-dates {
+  color: #64748b;
+}
+
+.habit-card-custom .habit-count {
+  color: #047857;
+}
+
+.habit-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.habit-badge {
+  display: inline-block;
+  font-size: 22rpx;
+  font-weight: bold;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+}
+
+.habit-dates {
+  font-size: 19rpx;
+  max-width: 180rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.habit-right {
+  display: flex;
+  align-items: baseline;
+  gap: 4rpx;
+}
+
+.habit-count {
+  font-size: 36rpx;
+  font-weight: 900;
+}
+
+.habit-unit {
+  font-size: 20rpx;
+  color: #64748b;
+}
+
+.chart-empty {
+  text-align: center;
+  padding: 40rpx 0;
+  font-size: 22rpx;
+  color: #94a3b8;
+}

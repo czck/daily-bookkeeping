@@ -1,0 +1,36 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/chart/chart"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTitleText": "碎银与浮生",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#F7F8FA"
+  },
+  "lazyCodeLoading": "requiredComponents",
+  "tabBar": {
+    "color": "#94a3b8",
+    "selectedColor": "#07C160",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "账本流水",
+        "iconPath": "images/tab_bill.png",
+        "selectedIconPath": "images/tab_bill_active.png"
+      },
+      {
+        "pagePath": "pages/chart/chart",
+        "text": "统计图表",
+        "iconPath": "images/tab_chart.png",
+        "selectedIconPath": "images/tab_chart_active.png"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

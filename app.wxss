@@ -1,0 +1,35 @@
+/** app.wxss **/
+page {
+  background-color: #F7F8FA;
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', Arial, sans-serif;
+  color: #1e293b;
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+}
+
+view, text, textarea, button, input {
+  box-sizing: border-box;
+}
+
+/* 微信绿核心主色 */
+.primary-color {
+  color: #07C160;
+}
+.bg-primary {
+  background-color: #07C160;
+}
+
+/* 通用卡片样式 */
+.card {
+  background-color: #ffffff;
+  border-radius: 28rpx;
+  padding: 28rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.03);
+  margin-bottom: 24rpx;
+}
+
+/* 按钮点击波纹/微缩效果 */
+.btn-hover {
+  opacity: 0.85;
+  transform: scale(0.98);
+}

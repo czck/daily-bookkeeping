@@ -1,0 +1,177 @@
+<!-- pages/chart/chart.wxml -->
+<view class="container">
+
+  <!-- 1. 顶部核心周期指标三联卡 (本周 / 本月 / 月度日均) -->
+  <view class="summary-triple-card">
+    <view class="triple-item">
+      <text class="triple-label">本周开销</text>
+      <text class="triple-val text-green">¥ {{thisWeekTotal}}</text>
+      <text class="triple-sub">{{currentWeekLabel || '本周'}}</text>
+    </view>
+    <view class="triple-divider"></view>
+    <view class="triple-item">
+      <text class="triple-label">本月开销</text>
+      <text class="triple-val text-dark">¥ {{thisMonthTotal}}</text>
+      <text class="triple-sub">{{currentMonthLabel || '本月'}}</text>
+    </view>
+    <view class="triple-divider"></view>
+    <view class="triple-item">
+      <text class="triple-label">月度日均</text>
+      <text class="triple-val text-amber">¥ {{thisMonthDailyAvg}}</text>
+      <text class="triple-sub">平稳节奏</text>
+    </view>
+  </view>
+
+  <!-- 2. 开销走势对比 (支持按日、按周、按月对比) -->
+  <view class="chart-card">
+    <view class="card-title-row">
+      <view class="title-left">
+        <view class="indicator bg-green"></view>
+        <text class="card-title">{{currentTrendTitle}}</text>
+      </view>
+      
+      <!-- 维度切换按钮组 -->
+      <view class="dim-tabs">
+        <view class="dim-tab {{trendDimension === 'day' ? 'dim-tab-active' : ''}}" bindtap="switchTrendDimension" data-dim="day">
+          <text>按日</text>
+        </view>
+        <view class="dim-tab {{trendDimension === 'week' ? 'dim-tab-active' : ''}}" bindtap="switchTrendDimension" data-dim="week">
+          <text>按周</text>
+        </view>
+        <view class="dim-tab {{trendDimension === 'month' ? 'dim-tab-active' : ''}}" bindtap="switchTrendDimension" data-dim="month">
+          <text>按月</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 柱状图辅助操作栏：左侧滑动提示，右侧排序切换 (按时间 / 按消费) -->
+    <view class="chart-sub-toolbar">
+      <view class="chart-scroll-hint" wx:if="{{currentTrendList && currentTrendList.length > 4}}">
+        <text>👈 左右滑动 (共 {{currentTrendList.length}} 期)</text>
+      </view>
+      <view class="chart-scroll-hint" wx:else>
+        <text>📊 走势明细 (共 {{currentTrendList.length || 0}} 期)</text>
+      </view>
+
+      <!-- 排序切换按钮组：按时间 / 按消费 -->
+      <view class="sort-tabs">
+        <view class="sort-tab {{sortMode === 'time' ? 'sort-tab-active' : ''}}" bindtap="switchSortMode" data-mode="time">
+          <text>🕒 按时间</text>
+        </view>
+        <view class="sort-tab {{sortMode === 'amount' ? 'sort-tab-active' : ''}}" bindtap="switchSortMode" data-mode="amount">
+          <text>💰 按消费</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 柱状图横向滚动容器 (单屏舒适呈现 4~5 根柱子，彻底杜绝重叠) -->
+    <scroll-view 
+      class="bar-chart-scroll" 
+      scroll-x="true" 
+      enable-flex="true" 
+      scroll-left="{{chartScrollLeft}}"
+      scroll-with-animation="true"
+      wx:if="{{currentTrendList && currentTrendList.length > 0}}"
+    >
+      <view class="bar-chart-inner {{currentTrendList.length <= 4 ? 'bar-chart-inner-few' : ''}}">
+        <view class="bar-col" wx:for="{{currentTrendList}}" wx:key="label">
+          <text class="bar-amount">¥{{item.amount}}</text>
+          <view class="bar-track">
+            <view class="bar-fill" style="{{ 'height: ' + item.heightPercent + '%;' }}"></view>
+          </view>
+          <text class="bar-date">{{item.label}}</text>
+
+          <!-- 按周统计时的月份小横线标识（同月份连续周在下方连成一条横线，居中显示月份） -->
+          <view class="week-month-group" wx:if="{{trendDimension === 'week' && sortMode === 'time' && item.monthKey}}">
+            <view class="week-month-line {{item.isFirstInMonth ? 'month-line-start' : ''}} {{item.isLastInMonth ? 'month-line-end' : ''}} {{item.isSoloInMonth ? 'month-line-solo' : ''}}"></view>
+            <text class="week-month-text {{item.showMonthLabel ? 'month-text-show' : 'month-text-hidden'}}">{{item.monthName}}</text>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+    <view class="chart-empty" wx:else>
+      <text>暂无走势数据</text>
+    </view>
+
+    <!-- 柱状图底部说明 -->
+    <view class="chart-meta" wx:if="{{currentTrendSummary}}">
+      <text>{{currentTrendSummary}}</text>
+    </view>
+  </view>
+
+  <!-- 3. 品类消费分布 (环形图 + 占比进度条) -->
+  <view class="chart-card">
+    <view class="card-title-row">
+      <view class="title-left">
+        <view class="indicator bg-teal"></view>
+        <text class="card-title">品类消费分布</text>
+      </view>
+      <text class="card-tag">共 {{categories.length}} 个品类</text>
+    </view>
+
+    <!-- 环形图与右侧品类概览 -->
+    <view class="pie-section">
+      <view class="canvas-box">
+        <canvas type="2d" id="pieCanvas" class="pie-canvas"></canvas>
+        <view class="canvas-center-info">
+          <text class="center-sub">总笔数</text>
+          <text class="center-val">{{totalCount}} 笔</text>
+        </view>
+      </view>
+
+      <view class="pie-legend">
+        <view class="legend-row" wx:for="{{categories}}" wx:key="name">
+          <view class="legend-left">
+            <view class="legend-dot" style="{{ 'background-color: ' + item.color + ';' }}"></view>
+            <text class="legend-name">{{item.emoji}} {{item.name}}</text>
+          </view>
+          <view class="legend-right">
+            <text class="legend-amount">¥{{item.amount}}</text>
+            <text class="legend-percent">({{item.percent}}%)</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 品类占比进度条列表 -->
+    <view class="cat-progress-list">
+      <view class="progress-item" wx:for="{{categories}}" wx:key="name">
+        <view class="progress-info">
+          <text class="p-name">{{item.emoji}} {{item.name}}</text>
+          <text class="p-count">{{item.count}} 笔</text>
+        </view>
+        <view class="progress-bar-bg">
+          <view class="progress-bar-fill" style="{{ 'width: ' + item.percent + '%; background-color: ' + item.color + ';' }}"></view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 4. 自定义打卡项习惯统计 (完全动态展示) -->
+  <view class="chart-card">
+    <view class="card-title-row">
+      <view class="title-left">
+        <view class="indicator bg-purple"></view>
+        <text class="card-title">打卡统计</text>
+      </view>
+      <text class="card-tag">共 {{habitTags.length}} 个习惯项</text>
+    </view>
+
+    <view class="habit-grid-4" wx:if="{{habitTags && habitTags.length > 0}}">
+      <view class="habit-card habit-card-custom" wx:for="{{habitTags}}" wx:key="name" wx:for-item="tag">
+        <view class="habit-left">
+          <text class="habit-badge">{{tag.name}}</text>
+          <text class="habit-dates">{{tag.datesText}}</text>
+        </view>
+        <view class="habit-right">
+          <text class="habit-count">{{tag.count}}</text>
+          <text class="habit-unit">次</text>
+        </view>
+      </view>
+    </view>
+    <view class="chart-empty" wx:else>
+      <text>还没有打卡记录，可在记账弹窗中点击打卡</text>
+    </view>
+  </view>
+
+</view>

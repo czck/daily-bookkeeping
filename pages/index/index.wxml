@@ -1,0 +1,642 @@
+<!-- pages/index/index.wxml -->
+<view class="container">
+
+  <!-- 1. 顶部生活开销概览卡片 (支持本月/本周/全部维度切换，支持左右滑动切换月份) -->
+  <view class="overview-card" bindtouchstart="onTouchStart" bindtouchend="onTouchEnd">
+    
+    <!-- 顶部行：左侧维度切换 Tab，右侧操作按钮 (记一笔) -->
+    <view class="overview-top-bar">
+      <view class="scope-tabs">
+        <view class="scope-tab {{currentScope === 'week' ? 'scope-tab-active' : ''}}" bindtap="switchScope" data-scope="week">
+          <text>⚡ 本周</text>
+        </view>
+        <view class="scope-tab {{currentScope === 'month' ? 'scope-tab-active' : ''}}" bindtap="switchScope" data-scope="month">
+          <text>📅 本月</text>
+        </view>
+        <view class="scope-tab {{currentScope === 'all' ? 'scope-tab-active' : ''}}" bindtap="switchScope" data-scope="all">
+          <text>📜 全部</text>
+        </view>
+      </view>
+
+      <view class="header-actions">
+        <view class="top-action-btn" hover-class="btn-hover" bindtap="openAddModalDirect" data-mode="bill">
+          <text class="icon">💰</text>
+          <text>记一笔</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 月份左右切换导航器 (仅在“本月/月度”模式下展示，支持滑动与点击) -->
+    <view class="month-nav-row" wx:if="{{currentScope === 'month'}}">
+      <view class="month-nav-btn" hover-class="btn-hover" catchtap="handlePrevMonth">
+        <text class="nav-arrow">◀</text>
+        <text class="nav-label">{{prevMonthLabel}}</text>
+      </view>
+      <view class="month-nav-current">
+        <text class="nav-current-title">{{viewYear}}年{{viewMonth}}月</text>
+        <text class="nav-swipe-hint">👈 滑动切换 👉</text>
+      </view>
+      <view class="month-nav-btn" hover-class="btn-hover" catchtap="handleNextMonth">
+        <text class="nav-label">{{nextMonthLabel}}</text>
+        <text class="nav-arrow">▶</text>
+      </view>
+    </view>
+
+    <!-- 中间行：标题与金额 -->
+    <view class="overview-middle-row">
+      <view class="overview-title-group">
+        <text class="overview-sub">{{scopeTitle}}</text>
+        <text class="overview-amount">¥ {{scopeTotalAmount}}</text>
+      </view>
+      <view class="overview-badge" wx:if="{{scopeSubtitle}}">
+        <text>{{scopeSubtitle}}</text>
+      </view>
+    </view>
+
+    <!-- 底部汇总多维数据栏 -->
+    <view class="overview-footer">
+      <view class="footer-item">
+        <text class="label">记账天数：</text>
+        <text class="val">{{scopeDays}} 天</text>
+      </view>
+      <view class="footer-divider"></view>
+      <view class="footer-item">
+        <text class="label">日均：</text>
+        <text class="val">¥ {{scopeAvg}}</text>
+      </view>
+      <view class="footer-divider"></view>
+      <view class="footer-item">
+        <text class="label">打卡累计：</text>
+        <text class="val">{{scopeHabits}} 次</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 2. 时间轴每日流水与随记列表 (支持按月与按周二级折叠展示) -->
+  <view class="timeline-list">
+    <block wx:if="{{groupedTimeline && groupedTimeline.length > 0}}">
+      
+      <!-- 快捷折叠/展开工具条 (当存在多个归档组时显示) -->
+      <view class="timeline-tools-bar" wx:if="{{groupedTimeline.length > 1 || (groupedTimeline[0] && groupedTimeline[0].weeks && groupedTimeline[0].weeks.length > 1)}}">
+        <text class="timeline-tools-title" wx:if="{{currentScope === 'all'}}">共 {{groupedTimeline.length}} 个月份归档</text>
+        <text class="timeline-tools-title" wx:elif="{{currentScope === 'month'}}">{{viewMonth}}月共 {{groupedTimeline[0].weeks.length}} 个周归档</text>
+        <text class="timeline-tools-title" wx:else>本周流水</text>
+
+        <view class="timeline-tools-action" hover-class="btn-hover" bindtap="toggleAllTimelineCollapse">
+          <text>{{isAllTimelineCollapsed ? '全部展开 ▼' : '全部折叠 ▲'}}</text>
+        </view>
+      </view>
+
+      <!-- 月份折叠分组 -->
+      <view class="timeline-month-group" wx:for="{{groupedTimeline}}" wx:key="key" wx:for-item="month">
+        
+        <!-- 一级：月份折叠标题栏 (在全部模式或月份模式显示) -->
+        <view class="month-header" hover-class="btn-hover" bindtap="toggleMonthCollapse" data-key="{{month.key}}" wx:if="{{currentScope !== 'week'}}">
+          <view class="group-header-left">
+            <view class="month-indicator"></view>
+            <text class="month-title">{{month.title}}</text>
+            <text class="group-badge">{{month.daysCount}}天 · {{month.itemCount}}笔</text>
+          </view>
+          <view class="group-header-right">
+            <text class="month-amount">¥ {{month.totalAmount}}</text>
+            <text class="group-arrow {{month.collapsed ? 'arrow-collapsed' : 'arrow-expanded'}}">▼</text>
+          </view>
+        </view>
+
+        <!-- 月份内容区 (二级周归档列表) -->
+        <view class="month-body {{month.collapsed && currentScope !== 'week' ? 'month-body-hidden' : ''}}">
+          
+          <view class="timeline-week-group" wx:for="{{month.weeks}}" wx:key="key" wx:for-item="wk">
+            <!-- 二级：周折叠标题栏 -->
+            <view class="week-header" hover-class="btn-hover" bindtap="toggleWeekCollapse" data-month-key="{{month.key}}" data-week-key="{{wk.key}}">
+              <view class="week-header-left">
+                <view class="week-dot"></view>
+                <text class="week-title">{{wk.title}}</text>
+                <text class="week-range" wx:if="{{wk.rangeText}}">{{wk.rangeText}}</text>
+                <text class="week-badge">{{wk.daysCount}}天 · {{wk.itemCount}}笔</text>
+              </view>
+              <view class="week-header-right">
+                <text class="week-amount">¥ {{wk.totalAmount}}</text>
+                <text class="week-arrow {{wk.collapsed ? 'arrow-collapsed' : 'arrow-expanded'}}">▼</text>
+              </view>
+            </view>
+
+            <!-- 周内容区：单日手帐流水卡片 -->
+            <view class="week-body {{wk.collapsed ? 'week-body-hidden' : ''}}">
+              <view class="day-card" wx:for="{{wk.days}}" wx:key="id" wx:for-item="day" bindlongpress="handleDeleteGroup" data-id="{{day.id}}" data-date="{{day.date}}">
+                <!-- 卡片头部：日期与当日合计 + 更多操作按钮 -->
+                <view class="card-header">
+                  <view class="date-group">
+                    <view class="date-indicator"></view>
+                    <text class="date-title">{{day.dateDisplay || day.date}}</text>
+                    <text class="weekday" wx:if="{{day.weekday}}">{{day.weekday}}</text>
+                  </view>
+                  <view class="header-right">
+                    <view class="day-total" wx:if="{{day.total > 0}}">
+                      <text class="total-label">合计</text>
+                      <text class="total-amount">¥ {{day.totalDisplay || day.total}}</text>
+                    </view>
+                    <view class="day-more-btn" catchtap="handleDayMoreActions" data-id="{{day.id}}" data-date="{{day.date}}" hover-class="btn-hover">
+                      <text class="more-dots">···</text>
+                    </view>
+                  </view>
+                </view>
+
+                <!-- 条目清单：小表情 + 名称 + 金额 (点击即可单笔修改或删除) -->
+                <view class="items-list" wx:if="{{day.items && day.items.length > 0}}">
+                  <view 
+                    class="bill-item" 
+                    wx:for="{{day.items}}" 
+                    wx:key="id" 
+                    wx:for-item="bill"
+                    catchtap="handleTapBillItem"
+                    data-group-id="{{day.id}}"
+                    data-item-id="{{bill.id}}"
+                    hover-class="bill-item-hover"
+                  >
+                    <view class="item-left">
+                      <view class="emoji-box emoji-{{bill.type || 'other'}}">
+                        <text class="emoji-char">{{bill.emoji || '🍳'}}</text>
+                      </view>
+                      <text class="item-name">{{bill.name}}</text>
+                    </view>
+                    <view class="item-right">
+                      <text class="item-amount">¥ {{bill.amountDisplay || bill.amount}}</text>
+                      <text class="item-edit-arrow">›</text>
+                    </view>
+                  </view>
+                </view>
+
+                <!-- 读书随记嵌入块 (点击可删除或查看) -->
+                <view class="life-block book-block" wx:if="{{day.book}}" catchtap="handleTapLifeBlock" data-group-id="{{day.id}}" data-type="book" hover-class="life-block-hover">
+                  <text class="life-icon">📖</text>
+                  <view class="life-content">
+                    <view class="life-title-row">
+                      <text class="life-title">{{day.book.title}}</text>
+                      <text class="life-badge badge-book">{{day.book.progress}}</text>
+                    </view>
+                    <text class="life-desc" wx:if="{{day.book.quote}}">{{day.book.quote}}</text>
+                  </view>
+                </view>
+
+                <!-- 旅途足迹嵌入块 (点击可删除或查看) -->
+                <view class="life-block travel-block" wx:if="{{day.travel}}" catchtap="handleTapLifeBlock" data-group-id="{{day.id}}" data-type="travel" hover-class="life-block-hover">
+                  <text class="life-icon">✈️</text>
+                  <view class="life-content">
+                    <view class="life-title-row">
+                      <text class="life-title">{{day.travel.location}}</text>
+                      <text class="life-badge badge-travel">{{day.travel.tag}}</text>
+                    </view>
+                    <text class="life-desc" wx:if="{{day.travel.notes}}">{{day.travel.notes}}</text>
+                  </view>
+                </view>
+
+                <!-- 底部自定义打卡状态胶囊 (点击可精准取消打卡) -->
+                <view class="card-footer" wx:if="{{day.tags && day.tags.length > 0}}">
+                  <view class="note-content">
+                    <text class="note-icon">⚡</text>
+                    <text class="note-text">打卡：</text>
+                  </view>
+                  <view class="tag-group">
+                    <text 
+                      class="tag-capsule" 
+                      wx:for="{{day.tags}}" 
+                      wx:key="*this" 
+                      wx:for-item="t"
+                      catchtap="handleTapDayHabit"
+                      data-group-id="{{day.id}}"
+                      data-tag="{{t}}"
+                      hover-class="tag-hover"
+                    >{{t}}</text>
+                  </view>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </block>
+
+    <view class="empty-state" wx:else>
+      <text class="empty-icon">🍃</text>
+      <text class="empty-title">暂无 {{currentScope === 'month' ? viewYear + '年' + viewMonth + '月' : (currentScope === 'week' ? '本周' : '')}} 的手帐记录</text>
+      <text class="empty-text">轻点下方按钮开始记账，或直接粘贴导入历史文本清单</text>
+      <view class="empty-actions">
+        <view class="empty-btn-primary" hover-class="btn-hover" bindtap="openAddModalDirect" data-mode="bill">
+          <text>💰 记第一笔</text>
+        </view>
+        <view class="empty-btn-sub" hover-class="btn-hover" bindtap="openAddModalDirect" data-mode="import">
+          <text>📥 批量文本导入</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="bottom-tip">
+    <text>💡 点击任意账单可修改或删除 · 点击 ··· 可管理整天</text>
+  </view>
+
+  <!-- 3. 悬浮快捷按钮 (默认直接进入记账) -->
+  <view class="fab-btn" hover-class="btn-hover" bindtap="openAddModalDirect" data-mode="bill">
+    <text class="fab-icon">＋</text>
+  </view>
+
+  <!-- 4. 录入弹窗 (记账排在最前面，包含批量导入) -->
+  <view class="modal-mask {{showAddModal ? 'modal-show' : ''}}" wx:if="{{showAddModal}}" bindtap="closeAddModal">
+    <view class="modal-sheet" catchtap="preventBubble">
+      
+      <!-- 弹窗顶栏：模式切换 Tab (固定在顶部) -->
+      <view class="modal-top-bar">
+        <view class="mode-tabs">
+          <view class="mode-tab {{currentMode === 'bill' ? 'mode-tab-active' : ''}}" bindtap="switchMode" data-mode="bill">
+            <text>💰 记账</text>
+          </view>
+          <view class="mode-tab {{currentMode === 'habit' ? 'mode-tab-active' : ''}}" bindtap="switchMode" data-mode="habit">
+            <text>⚡ 打卡</text>
+          </view>
+          <view class="mode-tab {{currentMode === 'book' ? 'mode-tab-active' : ''}}" bindtap="switchMode" data-mode="book">
+            <text>📖 读书</text>
+          </view>
+          <view class="mode-tab {{currentMode === 'travel' ? 'mode-tab-active' : ''}}" bindtap="switchMode" data-mode="travel">
+            <text>✈️ 旅游</text>
+          </view>
+          <view class="mode-tab {{currentMode === 'import' ? 'mode-tab-active' : ''}}" bindtap="switchMode" data-mode="import">
+            <text>📥 导入/导出</text>
+          </view>
+        </view>
+        <view class="modal-close-btn" bindtap="closeAddModal">✕</view>
+      </view>
+
+      <!-- 可平滑滑动的表单内容区 -->
+      <scroll-view class="modal-scroll-body" scroll-y="true" enhanced="true" show-scrollbar="false">
+
+      <!-- 日期选择条 (导入模式自带日期，故不显示) -->
+      <view class="date-selector-bar" wx:if="{{currentMode !== 'import'}}">
+        <text class="date-selector-label">📅 记录日期：</text>
+        <picker mode="date" value="{{selectedDateString}}" bindchange="onDateChange">
+          <view class="date-picker-badge">
+            <text>{{selectedDateDisplay}}</text>
+            <text class="arrow">▼</text>
+          </view>
+        </picker>
+      </view>
+
+      <!-- 分支 1: 【💰 记账模式】（默认排在最前，含购物平台与自定义记账） -->
+      <view class="mode-content" wx:if="{{currentMode === 'bill'}}">
+        <view class="amount-card">
+          <text class="amount-label">金额</text>
+          <view class="amount-input-row">
+            <text class="currency-symbol">¥</text>
+            <input type="digit" class="amount-input" placeholder="0.00" value="{{billAmount}}" bindinput="onAmountInput"/>
+          </view>
+        </view>
+
+        <!-- 分类九宫格点选 (包含【购物平台】与【➕ 自定义】) -->
+        <view class="category-section">
+          <view class="cat-section-header">
+            <text class="cat-section-title">点选高频餐饮、超市、网购或自定义分类：</text>
+            <text class="cat-section-subtip">长按自定义项可删除</text>
+          </view>
+          <view class="cat-grid">
+            <view 
+              class="cat-card {{selectedCategory.name === cat.name ? 'cat-card-selected' : ''}}" 
+              wx:for="{{presetCategories}}" 
+              wx:key="name" 
+              wx:for-item="cat"
+              bindtap="selectCategory" 
+              bindlongpress="handleCategoryLongPress"
+              data-cat="{{cat}}"
+            >
+              <text class="cat-custom-tag" wx:if="{{cat.isCustom}}">自</text>
+              <text class="cat-emoji">{{cat.emoji}}</text>
+              <text class="cat-name">{{cat.name}}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 当选中【➕ 自定义】时，展开专属分类名称输入框与丰富表情库 -->
+        <view class="custom-cat-box" wx:if="{{selectedCategory.name === '自定义'}}">
+          <view class="custom-name-row">
+            <view class="selected-custom-emoji">
+              <text>{{customCategoryEmoji || '🏷️'}}</text>
+            </view>
+            <input 
+              class="form-input font-bold custom-name-input" 
+              placeholder="输入分类名，如：理发、电影、数码、猫粮..." 
+              value="{{customCategoryName}}" 
+              bindinput="onCustomCategoryInput"
+            />
+          </view>
+          
+          <!-- 丰富表情库供用户挑选 -->
+          <view class="emoji-picker-section">
+            <text class="emoji-picker-title">选个生动小表情：</text>
+            <scroll-view class="emoji-scroll-row" scroll-x="true" enable-flex="true">
+              <view 
+                class="emoji-item {{customCategoryEmoji === em ? 'emoji-item-selected' : ''}}" 
+                wx:for="{{customEmojiList}}" 
+                wx:key="*this" 
+                wx:for-item="em"
+                catchtap="selectCustomEmoji" 
+                data-emoji="{{em}}"
+              >
+                <text class="emoji-item-char">{{em}}</text>
+              </view>
+            </scroll-view>
+          </view>
+        </view>
+
+        <view class="input-group">
+          <input class="form-input" placeholder="备注（可选，如：和朋友聚餐、淘宝买衣服）" value="{{billRemark}}" bindinput="onRemarkInput"/>
+        </view>
+
+        <button class="btn-primary" hover-class="btn-hover" bindtap="handleSaveDirectBill">✓ 保存这笔账单</button>
+      </view>
+
+      <!-- 分支 2: 【⚡ 自定义打卡模式】 -->
+      <view class="mode-content" wx:if="{{currentMode === 'habit'}}">
+        <view class="habit-header-row">
+          <text class="habit-tip">点击一键打卡到所选日期：</text>
+          <text class="habit-tip-sub">长按可删除</text>
+        </view>
+        
+        <view class="habit-custom-grid">
+          <view 
+            class="habit-tap-btn" 
+            hover-class="btn-hover" 
+            wx:for="{{customHabits}}" 
+            wx:key="*this" 
+            bindtap="handleSaveDirectHabit" 
+            bindlongpress="handleDeleteCustomHabit" 
+            data-name="{{item}}"
+          >
+            <view class="habit-tap-info">
+              <text class="habit-tap-name">{{item}}</text>
+              <text class="habit-tap-hint">点击打卡</text>
+            </view>
+            <text class="habit-tap-plus">＋</text>
+          </view>
+        </view>
+
+        <view class="add-habit-box">
+          <text class="add-habit-title">➕ 想要新习惯？创建专属打卡项：</text>
+          
+          <!-- 打卡生动小表情挑选条 -->
+          <view class="habit-emoji-picker-row">
+            <view class="selected-habit-emoji-badge">
+              <text>{{newHabitEmoji || '⚡'}}</text>
+            </view>
+            <scroll-view class="habit-emoji-scroll" scroll-x="true" enable-flex="true">
+              <view 
+                class="habit-emoji-item {{newHabitEmoji === em ? 'habit-emoji-item-selected' : ''}}" 
+                wx:for="{{habitEmojiList}}" 
+                wx:key="*this" 
+                wx:for-item="em"
+                catchtap="selectHabitEmoji" 
+                data-emoji="{{em}}"
+              >
+                <text class="habit-emoji-char">{{em}}</text>
+              </view>
+            </scroll-view>
+          </view>
+
+          <view class="add-habit-row">
+            <input 
+              class="add-habit-input" 
+              placeholder="输入打卡名称，如：早起、跑步..." 
+              value="{{newHabitName}}" 
+              bindinput="onNewHabitInput"
+            />
+            <button class="add-habit-btn" hover-class="btn-hover" bindtap="handleCreateCustomHabit">创建</button>
+          </view>
+        </view>
+      </view>
+
+      <!-- 分支 3: 【📖 读书随记模式】 -->
+      <view class="mode-content" wx:if="{{currentMode === 'book'}}">
+        <view class="input-group">
+          <text class="form-label">书名：</text>
+          <input class="form-input font-bold" placeholder="例如：《置身事内》、《纳瓦尔宝典》" value="{{bookTitle}}" bindinput="onBookTitleInput"/>
+        </view>
+        <view class="input-group">
+          <text class="form-label">当前进度：</text>
+          <input class="form-input" placeholder="例如：读完第3章 / 80%" value="{{bookProgress}}" bindinput="onBookProgressInput"/>
+        </view>
+        <view class="input-group">
+          <text class="form-label">一句书摘或心得体会：</text>
+          <textarea class="form-textarea" placeholder="写下一句触动你的话或当下的思考..." value="{{bookQuote}}" bindinput="onBookQuoteInput"></textarea>
+        </view>
+        <button class="btn-amber" hover-class="btn-hover" bindtap="handleSaveDirectBook">📖 保存读书足迹</button>
+      </view>
+
+      <!-- 分支 4: 【✈️ 旅游/出行随记模式】 -->
+      <view class="mode-content" wx:if="{{currentMode === 'travel'}}">
+        <view class="input-group">
+          <text class="form-label">目的地 / 景点：</text>
+          <input class="form-input font-bold" placeholder="例如：苏州平江路 / 杭州西湖" value="{{travelLocation}}" bindinput="onTravelLocationInput"/>
+        </view>
+        <view class="input-group">
+          <text class="form-label">游览随记感受：</text>
+          <textarea class="form-textarea" placeholder="记录当下的心情、风景、天气或沿途见闻..." value="{{travelNotes}}" bindinput="onTravelNotesInput"></textarea>
+        </view>
+        <button class="btn-sky" hover-class="btn-hover" bindtap="handleSaveDirectTravel">✈️ 保存旅途漫记</button>
+      </view>
+
+      <!-- 分支 5: 【📥 批量文本导入模式】 -->
+      <view class="mode-content" wx:if="{{currentMode === 'import'}}">
+        <view class="import-tip-box">
+          <text class="import-tip-title">💡 智能识别规则：</text>
+          <text class="import-tip-desc">直接粘贴日常账单，自动识别日期（如 9.14）、品类与金额（如 早饭 16.7 或 美团小象超市:39.8）。</text>
+        </view>
+
+        <view class="import-textarea-wrap">
+          <textarea 
+            class="import-textarea" 
+            placeholder="在此粘贴账单文本，例如：&#10;9.14&#10;美团小象超市:39.8&#10;早饭 16.7&#10;晚饭 13.49&#10;合计 69.99" 
+            value="{{importRawText}}" 
+            bindinput="onImportInput"
+            maxlength="-1"
+          ></textarea>
+        </view>
+
+        <view class="import-tools-row">
+          <view class="tool-btn" hover-class="btn-hover" bindtap="pasteFromClipboard">
+            <text>📋 粘贴剪贴板</text>
+          </view>
+          <view class="tool-btn tool-btn-accent" hover-class="btn-hover" bindtap="fillSixMonthsTestData">
+            <text>🧪 载入6个月测试数据</text>
+          </view>
+          <view class="tool-btn" hover-class="btn-hover" bindtap="fillSampleImport">
+            <text>💡 短示例</text>
+          </view>
+          <view class="tool-btn tool-btn-warn" hover-class="btn-hover" bindtap="clearImportText">
+            <text>🧹 清空</text>
+          </view>
+        </view>
+
+        <button class="btn-primary" hover-class="btn-hover" bindtap="handleConfirmImport">
+          ✓ 确认智能解析并导入
+        </button>
+
+        <!-- 微信云开发实时同步卡片 -->
+        <view class="cloud-sync-section">
+          <view class="cloud-sync-header">
+            <view class="cloud-status-badge {{cloudStatus.connected ? 'cloud-badge-connected' : 'cloud-badge-disconnected'}}">
+              <text class="cloud-dot"></text>
+              <text>{{cloudStatus.connected ? '☁️ 微信云端：已连接 (cloud1)' : '☁️ 微信云端：连接中...'}}</text>
+            </view>
+            <text class="cloud-time-tip">同步：{{cloudStatus.lastSyncTime || '未同步'}}</text>
+          </view>
+          
+          <view class="cloud-sync-desc-row">
+            <text class="cloud-sync-desc">开启微信云开发后，记账与打卡在本地秒开的同时，自动静默同步至云数据库，换手机登录微信号自动恢复。</text>
+          </view>
+
+          <view class="cloud-actions-row">
+            <button class="btn-cloud-action btn-cloud-upload" hover-class="btn-hover" bindtap="handleManualCloudUpload" loading="{{cloudStatus.isSyncing}}">
+              <text>☁️ 立即同步至云端</text>
+            </button>
+            <button class="btn-cloud-action btn-cloud-download" hover-class="btn-hover" bindtap="handleManualCloudDownload">
+              <text>📥 从云端拉取覆盖</text>
+            </button>
+          </view>
+        </view>
+
+        <!-- 数据清理与安全管理区 -->
+        <view class="data-manage-section">
+          <view class="data-manage-title-row">
+            <text class="data-manage-title">🧹 数据清理与重置：</text>
+            <text class="data-manage-tip">测试数据污染时可一键剔除</text>
+          </view>
+          <view class="data-manage-actions">
+            <button class="btn-clean-test" hover-class="btn-hover" bindtap="handleCleanTestData">
+              <text>🧹 一键剔除测试数据（保留真实数据）</text>
+            </button>
+            <button class="btn-clean-all" hover-class="btn-hover" bindtap="handleClearAllData">
+              <text>⚠️ 彻底清空所有手账（恢复空白）</text>
+            </button>
+          </view>
+        </view>
+
+        <!-- 数据导出备份区 -->
+        <view class="export-backup-section">
+          <view class="export-backup-tip">
+            <text class="export-backup-title">📤 导出备份：</text>
+            <text class="export-backup-desc">将当前全部记录导出为纯文本格式，方便迁移或归档备份。</text>
+          </view>
+          <button class="btn-export-backup" hover-class="btn-hover" bindtap="handleExport">
+            <text>📋 复制全部手账文本到剪贴板</text>
+          </button>
+        </view>
+      </view>
+
+      </scroll-view>
+    </view>
+  </view>
+
+  <!-- 5. 账单条目修改与单笔删除专属弹窗 -->
+  <view class="modal-mask modal-show" wx:if="{{showEditModal}}" bindtap="closeEditModal">
+    <view class="modal-sheet" catchtap="preventBubble">
+      
+      <!-- 弹窗顶栏 (固定在顶部) -->
+      <view class="modal-top-bar">
+        <view class="modal-title-box">
+          <text class="modal-title-text">✏️ 修改这笔账单</text>
+        </view>
+        <view class="modal-close-btn" bindtap="closeEditModal">✕</view>
+      </view>
+
+      <!-- 可平滑滑动的表单内容区 (确保在选择自定义表情等展开高度时能完整滑到底部看到删除按钮) -->
+      <scroll-view class="modal-scroll-body" scroll-y="true" enhanced="true" show-scrollbar="false">
+
+      <!-- 日期选择条 (支持将账单平移到其他日期) -->
+      <view class="date-selector-bar">
+        <text class="date-selector-label">📅 消费日期：</text>
+        <picker mode="date" value="{{editDateString}}" bindchange="onEditDateChange">
+          <view class="date-picker-badge">
+            <text>{{editDateDisplay}}</text>
+            <text class="arrow">▼</text>
+          </view>
+        </picker>
+      </view>
+
+      <!-- 金额输入 -->
+      <view class="amount-card">
+        <text class="amount-label">金额</text>
+        <view class="amount-input-row">
+          <text class="currency-symbol">¥</text>
+          <input type="digit" class="amount-input" placeholder="0.00" value="{{editAmount}}" bindinput="onEditAmountInput"/>
+        </view>
+      </view>
+
+      <!-- 分类点选九宫格 -->
+      <view class="category-section">
+        <view class="cat-section-header">
+          <text class="cat-section-title">重新选择消费品类：</text>
+          <text class="cat-section-subtip">长按自定义项可删除</text>
+        </view>
+        <view class="cat-grid">
+          <view 
+            class="cat-card {{editCategory.name === cat.name ? 'cat-card-selected' : ''}}" 
+            wx:for="{{presetCategories}}" 
+            wx:key="name" 
+            wx:for-item="cat"
+            bindtap="selectEditCategory" 
+            bindlongpress="handleCategoryLongPress"
+            data-cat="{{cat}}"
+          >
+            <text class="cat-custom-tag" wx:if="{{cat.isCustom}}">自</text>
+            <text class="cat-emoji">{{cat.emoji}}</text>
+            <text class="cat-name">{{cat.name}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 当选中【➕ 自定义】时，展开专属分类名称输入框与丰富表情库 -->
+      <view class="custom-cat-box" wx:if="{{editCategory.name === '自定义'}}">
+        <view class="custom-name-row">
+          <view class="selected-custom-emoji">
+            <text>{{editCustomCategoryEmoji || '🏷️'}}</text>
+          </view>
+          <input 
+            class="form-input font-bold custom-name-input" 
+            placeholder="输入分类名，如：理发、电影、数码..." 
+            value="{{editCustomCategoryName}}" 
+            bindinput="onEditCustomCategoryInput"
+          />
+        </view>
+
+        <!-- 丰富表情库供用户挑选 -->
+        <view class="emoji-picker-section">
+          <text class="emoji-picker-title">选个生动小表情：</text>
+          <scroll-view class="emoji-scroll-row" scroll-x="true" enable-flex="true">
+            <view 
+              class="emoji-item {{editCustomCategoryEmoji === em ? 'emoji-item-selected' : ''}}" 
+              wx:for="{{customEmojiList}}" 
+              wx:key="*this" 
+              wx:for-item="em"
+              catchtap="selectEditCustomEmoji" 
+              data-emoji="{{em}}"
+            >
+              <text class="emoji-item-char">{{em}}</text>
+            </view>
+          </scroll-view>
+        </view>
+      </view>
+
+      <!-- 备注输入 -->
+      <view class="input-group">
+        <input class="form-input" placeholder="备注（可选）" value="{{editRemark}}" bindinput="onEditRemarkInput"/>
+      </view>
+
+      <!-- 操作按钮：保存修改 + 删除单笔 -->
+      <view class="edit-modal-actions">
+        <button class="btn-primary" hover-class="btn-hover" bindtap="handleSaveEditBill">✓ 保存修改</button>
+        <button class="btn-delete-item" hover-class="btn-hover" bindtap="handleDeleteSingleItem">🗑️ 删除这笔账单</button>
+      </view>
+
+      </scroll-view>
+    </view>
+  </view>
+
+</view>
