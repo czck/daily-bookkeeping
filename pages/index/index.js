@@ -69,9 +69,16 @@ const HABIT_EMOJI_LIST = [
   '🏊', '💰', '🎧', '🥑', '🧗', '🥊', '⚽', '🎮'
 ];
 
+const PRESET_TRAVEL_TAGS = [
+  '周末漫游', '深度游', '同城探店', '自驾出游', 
+  '户外露营', '历史探寻', '生活随笔', '随想漫笔', 
+  '亲子时光', '海岛度假'
+];
+
 Page({
   data: {
     bills: [],
+    presetTravelTags: PRESET_TRAVEL_TAGS,
     monthTotal: '0.00',
     recordDays: 0,
     avgDaily: '0.00',
@@ -960,6 +967,12 @@ Page({
   onTravelLocationInput(e) {
     this.setData({ travelLocation: e.detail.value });
   },
+  onTravelTagInput(e) {
+    this.setData({ travelTag: e.detail.value });
+  },
+  selectTravelTag(e) {
+    this.setData({ travelTag: e.currentTarget.dataset.tag });
+  },
   onTravelNotesInput(e) {
     this.setData({ travelNotes: e.detail.value });
   },
@@ -970,16 +983,18 @@ Page({
       return;
     }
     const { selectedDateShort, travelTag, travelNotes } = this.data;
+    const finalTag = (travelTag || '').trim() || '周末漫游';
     addDirectTravel({
       date: selectedDateShort,
       location: loc,
-      tag: travelTag,
+      tag: finalTag,
       notes: travelNotes.trim()
     });
 
     this.setData({
       showAddModal: false,
       travelLocation: '',
+      travelTag: '周末漫游',
       travelNotes: ''
     });
     this.refreshData();
@@ -1339,6 +1354,15 @@ Page({
 
   onEditTravelTagInput(e) {
     this.setData({ editTravelTag: e.detail.value });
+  },
+
+  selectEditTravelTag(e) {
+    this.setData({ editTravelTag: e.currentTarget.dataset.tag });
+  },
+
+  handleDirectEditTravel(e) {
+    const { groupId } = e.currentTarget.dataset;
+    this.openEditTravelModal(groupId);
   },
 
   onEditTravelNotesInput(e) {

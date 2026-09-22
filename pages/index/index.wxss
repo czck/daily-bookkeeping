@@ -1774,3 +1774,57 @@
   font-weight: bold;
 }
 
+/* 8. 旅行随记标签快捷点选与自定义输入样式 */
+.travel-tag-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12rpx;
+}
+
+.travel-tag-hint {
+  font-size: 20rpx;
+  color: #94a3b8;
+}
+
+.travel-tag-scroll {
+  width: 100%;
+  white-space: nowrap;
+  display: flex;
+  gap: 12rpx;
+  padding: 4rpx 2rpx 14rpx 2rpx;
+  box-sizing: border-box;
+}
+
+.quick-travel-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 8rpx 20rpx;
+  border-radius: 14rpx;
+  background-color: #f0f9ff;
+  border: 1rpx solid #bae6fd;
+  color: #0284c7;
+  font-size: 22rpx;
+  font-weight: 500;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.quick-travel-tag-active {
+  background-color: #0284c7;
+  border-color: #0284c7;
+  color: #ffffff;
+  font-weight: bold;
+  box-shadow: 0 2rpx 8rpx rgba(2, 132, 199, 0.25);
+}
+
+.badge-travel {
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.badge-travel:active {
+  opacity: 0.7;
+}
+
+

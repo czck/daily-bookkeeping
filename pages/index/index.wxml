@@ -186,7 +186,7 @@
                   <view class="life-content">
                     <view class="life-title-row">
                       <text class="life-title">{{day.travel.location}}</text>
-                      <text class="life-badge badge-travel">{{day.travel.tag}}</text>
+                      <text class="life-badge badge-travel" catchtap="handleDirectEditTravel" data-group-id="{{day.id}}">{{day.travel.tag}}</text>
                     </view>
                     <text class="life-desc" wx:if="{{day.travel.notes}}">{{day.travel.notes}}</text>
                   </view>
@@ -437,6 +437,29 @@
         <view class="input-group">
           <text class="form-label">目的地 / 景点：</text>
           <input class="form-input font-bold" placeholder="例如：苏州平江路 / 杭州西湖" value="{{travelLocation}}" bindinput="onTravelLocationInput"/>
+        </view>
+        <view class="input-group">
+          <view class="travel-tag-header">
+            <text class="form-label">旅行标签 / 分类：</text>
+            <text class="travel-tag-hint">可点选快捷标签或自主输入</text>
+          </view>
+          <scroll-view class="travel-tag-scroll" scroll-x="true" enable-flex="true">
+            <view 
+              class="quick-travel-tag {{travelTag === item ? 'quick-travel-tag-active' : ''}}" 
+              wx:for="{{presetTravelTags}}" 
+              wx:key="*this"
+              catchtap="selectTravelTag" 
+              data-tag="{{item}}"
+            >
+              <text>{{item}}</text>
+            </view>
+          </scroll-view>
+          <input 
+            class="form-input" 
+            placeholder="自定义标签（如：周末漫游 / 深度游 / 历史漫谈...）" 
+            value="{{travelTag}}" 
+            bindinput="onTravelTagInput"
+          />
         </view>
         <view class="input-group">
           <text class="form-label">游览随记感受：</text>
@@ -713,8 +736,27 @@
         </view>
 
         <view class="input-group">
-          <text class="form-label">旅行标签：</text>
-          <input class="form-input" placeholder="例如：周末漫游 / 深度游 / 探店" value="{{editTravelTag}}" bindinput="onEditTravelTagInput"/>
+          <view class="travel-tag-header">
+            <text class="form-label">旅行标签 / 分类：</text>
+            <text class="travel-tag-hint">可点选快捷标签或自主输入</text>
+          </view>
+          <scroll-view class="travel-tag-scroll" scroll-x="true" enable-flex="true">
+            <view 
+              class="quick-travel-tag {{editTravelTag === item ? 'quick-travel-tag-active' : ''}}" 
+              wx:for="{{presetTravelTags}}" 
+              wx:key="*this"
+              catchtap="selectEditTravelTag" 
+              data-tag="{{item}}"
+            >
+              <text>{{item}}</text>
+            </view>
+          </scroll-view>
+          <input 
+            class="form-input" 
+            placeholder="自定义标签（如：周末漫游 / 深度游 / 历史漫谈...）" 
+            value="{{editTravelTag}}" 
+            bindinput="onEditTravelTagInput"
+          />
         </view>
 
         <view class="input-group">
