@@ -167,7 +167,7 @@
                   </view>
                 </view>
 
-                <!-- 读书随记嵌入块 (点击可删除或查看) -->
+                <!-- 读书随记嵌入块 (点击可修改或删除) -->
                 <view class="life-block book-block" wx:if="{{day.book}}" catchtap="handleTapLifeBlock" data-group-id="{{day.id}}" data-type="book" hover-class="life-block-hover">
                   <text class="life-icon">📖</text>
                   <view class="life-content">
@@ -177,9 +177,10 @@
                     </view>
                     <text class="life-desc" wx:if="{{day.book.quote}}">{{day.book.quote}}</text>
                   </view>
+                  <text class="item-edit-arrow">›</text>
                 </view>
 
-                <!-- 旅途足迹嵌入块 (点击可删除或查看) -->
+                <!-- 旅途足迹嵌入块 (点击可修改或删除) -->
                 <view class="life-block travel-block" wx:if="{{day.travel}}" catchtap="handleTapLifeBlock" data-group-id="{{day.id}}" data-type="travel" hover-class="life-block-hover">
                   <text class="life-icon">✈️</text>
                   <view class="life-content">
@@ -189,10 +190,11 @@
                     </view>
                     <text class="life-desc" wx:if="{{day.travel.notes}}">{{day.travel.notes}}</text>
                   </view>
+                  <text class="item-edit-arrow">›</text>
                 </view>
 
-                <!-- 底部自定义打卡状态胶囊 (点击可精准取消打卡) -->
-                <view class="card-footer" wx:if="{{day.tags && day.tags.length > 0}}">
+                <!-- 底部自定义打卡状态胶囊 (点击整条可修改打卡，点击单项可取消) -->
+                <view class="card-footer" wx:if="{{day.tags && day.tags.length > 0}}" catchtap="handleOpenEditHabits" data-group-id="{{day.id}}" hover-class="footer-hover">
                   <view class="note-content">
                     <text class="note-icon">⚡</text>
                     <text class="note-text">打卡：</text>
@@ -209,6 +211,7 @@
                       hover-class="tag-hover"
                     >{{t}}</text>
                   </view>
+                  <text class="habit-edit-badge">✏️</text>
                 </view>
               </view>
             </view>
@@ -635,6 +638,145 @@
         <button class="btn-delete-item" hover-class="btn-hover" bindtap="handleDeleteSingleItem">🗑️ 删除这笔账单</button>
       </view>
 
+      </scroll-view>
+    </view>
+  </view>
+
+  <!-- 6. 读书随记修改专属弹窗 -->
+  <view class="modal-mask modal-show" wx:if="{{showEditBookModal}}" bindtap="closeEditBookModal">
+    <view class="modal-sheet" catchtap="preventBubble">
+      <view class="modal-top-bar">
+        <view class="modal-title-box">
+          <text class="modal-title-text">📖 修改读书随记</text>
+        </view>
+        <view class="modal-close-btn" bindtap="closeEditBookModal">✕</view>
+      </view>
+
+      <scroll-view class="modal-scroll-body" scroll-y="true" enhanced="true" show-scrollbar="false">
+        <view class="date-selector-bar">
+          <text class="date-selector-label">📅 阅读日期：</text>
+          <picker mode="date" value="{{editBookDateString}}" bindchange="onEditBookDateChange">
+            <view class="date-picker-badge">
+              <text>{{editBookDateDisplay}}</text>
+              <text class="arrow">▼</text>
+            </view>
+          </picker>
+        </view>
+
+        <view class="input-group">
+          <text class="form-label">书名：</text>
+          <input class="form-input font-bold" placeholder="书名，如：置身事内" value="{{editBookTitle}}" bindinput="onEditBookTitleInput"/>
+        </view>
+
+        <view class="input-group">
+          <text class="form-label">当前进度：</text>
+          <input class="form-input" placeholder="例如：读完第3章 / 80% / 全书完" value="{{editBookProgress}}" bindinput="onEditBookProgressInput"/>
+        </view>
+
+        <view class="input-group">
+          <text class="form-label">书摘或心得感悟：</text>
+          <textarea class="form-textarea" placeholder="写下一句触动你的话或当下的思考..." value="{{editBookQuote}}" bindinput="onEditBookQuoteInput"></textarea>
+        </view>
+
+        <view class="edit-modal-actions">
+          <button class="btn-amber" hover-class="btn-hover" bindtap="handleSaveEditBook">✓ 保存修改</button>
+          <button class="btn-delete-item" hover-class="btn-hover" bindtap="handleDeleteBookDirect">🗑️ 删除读书随记</button>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+
+  <!-- 7. 旅途漫记修改专属弹窗 -->
+  <view class="modal-mask modal-show" wx:if="{{showEditTravelModal}}" bindtap="closeEditTravelModal">
+    <view class="modal-sheet" catchtap="preventBubble">
+      <view class="modal-top-bar">
+        <view class="modal-title-box">
+          <text class="modal-title-text">✈️ 修改旅途漫记</text>
+        </view>
+        <view class="modal-close-btn" bindtap="closeEditTravelModal">✕</view>
+      </view>
+
+      <scroll-view class="modal-scroll-body" scroll-y="true" enhanced="true" show-scrollbar="false">
+        <view class="date-selector-bar">
+          <text class="date-selector-label">📅 旅行日期：</text>
+          <picker mode="date" value="{{editTravelDateString}}" bindchange="onEditTravelDateChange">
+            <view class="date-picker-badge">
+              <text>{{editTravelDateDisplay}}</text>
+              <text class="arrow">▼</text>
+            </view>
+          </picker>
+        </view>
+
+        <view class="input-group">
+          <text class="form-label">目的地 / 景点：</text>
+          <input class="form-input font-bold" placeholder="例如：苏州平江路 / 杭州西湖" value="{{editTravelLocation}}" bindinput="onEditTravelLocationInput"/>
+        </view>
+
+        <view class="input-group">
+          <text class="form-label">旅行标签：</text>
+          <input class="form-input" placeholder="例如：周末漫游 / 深度游 / 探店" value="{{editTravelTag}}" bindinput="onEditTravelTagInput"/>
+        </view>
+
+        <view class="input-group">
+          <text class="form-label">游览随记感受：</text>
+          <textarea class="form-textarea" placeholder="记录当下的心情、风景、天气或沿途见闻..." value="{{editTravelNotes}}" bindinput="onEditTravelNotesInput"></textarea>
+        </view>
+
+        <view class="edit-modal-actions">
+          <button class="btn-sky" hover-class="btn-hover" bindtap="handleSaveEditTravel">✓ 保存修改</button>
+          <button class="btn-delete-item" hover-class="btn-hover" bindtap="handleDeleteTravelDirect">🗑️ 删除旅途漫记</button>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+
+  <!-- 8. 打卡记录修改专属弹窗 -->
+  <view class="modal-mask modal-show" wx:if="{{showEditHabitModal}}" bindtap="closeEditHabitModal">
+    <view class="modal-sheet" catchtap="preventBubble">
+      <view class="modal-top-bar">
+        <view class="modal-title-box">
+          <text class="modal-title-text">⚡ 修改该日打卡组合</text>
+        </view>
+        <view class="modal-close-btn" bindtap="closeEditHabitModal">✕</view>
+      </view>
+
+      <scroll-view class="modal-scroll-body" scroll-y="true" enhanced="true" show-scrollbar="false">
+        <view class="date-selector-bar">
+          <text class="date-selector-label">📅 打卡日期：</text>
+          <picker mode="date" value="{{editHabitDateString}}" bindchange="onEditHabitDateChange">
+            <view class="date-picker-badge">
+              <text>{{editHabitDateDisplay}}</text>
+              <text class="arrow">▼</text>
+            </view>
+          </picker>
+        </view>
+
+        <view class="habit-header-row">
+          <text class="habit-tip">轻点切换打卡状态（高亮即已打卡）：</text>
+          <text class="habit-tip-sub">已选 {{editHabitSelectedTags.length}} 项</text>
+        </view>
+
+        <!-- 打卡项多选网格 -->
+        <view class="habit-multi-grid">
+          <view 
+            class="habit-multi-item {{editHabitSelectedMap[item] ? 'habit-multi-selected' : ''}}" 
+            wx:for="{{editHabitAvailableTags}}" 
+            wx:key="*this"
+            catchtap="toggleEditHabitTag"
+            data-tag="{{item}}"
+            hover-class="btn-hover"
+          >
+            <view class="habit-multi-status-icon">
+              <text>{{editHabitSelectedMap[item] ? '✓' : '○'}}</text>
+            </view>
+            <text class="habit-multi-name">{{item}}</text>
+          </view>
+        </view>
+
+        <view class="edit-modal-actions">
+          <button class="btn-primary" hover-class="btn-hover" bindtap="handleSaveEditHabits">✓ 保存打卡修改</button>
+          <button class="btn-delete-item" hover-class="btn-hover" bindtap="handleClearDayHabitsDirect">🗑️ 清空该日打卡</button>
+        </view>
       </scroll-view>
     </view>
   </view>

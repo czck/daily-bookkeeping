@@ -668,14 +668,27 @@
 .travel-block .badge-travel { background-color: #ffffff; color: #0284c7; }
 .travel-block .life-desc  { color: #075985; }
 
+.life-block .item-edit-arrow {
+  align-self: center;
+  font-size: 28rpx;
+  color: #94a3b8;
+  margin-left: 8rpx;
+}
+
 /* 底部自定义打卡胶囊 */
 .card-footer {
   margin-top: 8rpx;
-  padding-top: 18rpx;
+  padding: 12rpx 10rpx;
   border-top: 1rpx dashed #f1f5f9;
+  border-radius: 12rpx;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 12rpx;
+  transition: background-color 0.15s ease;
+}
+
+.footer-hover {
+  background-color: #f8fafc;
 }
 
 .note-content {
@@ -684,6 +697,7 @@
   gap: 8rpx;
   font-size: 22rpx;
   color: #64748b;
+  flex-shrink: 0;
 }
 
 .note-text {
@@ -695,6 +709,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8rpx;
+  flex: 1;
 }
 
 .tag-capsule {
@@ -705,6 +720,13 @@
   background-color: #f1f5f9;
   color: #334155;
   border: 1rpx solid #e2e8f0;
+}
+
+.habit-edit-badge {
+  font-size: 22rpx;
+  opacity: 0.5;
+  padding: 4rpx;
+  flex-shrink: 0;
 }
 
 /* 空状态与底部提示 */
@@ -1691,3 +1713,64 @@
   font-size: 32rpx;
   line-height: 1;
 }
+
+/* 7. 打卡修改多选网格 */
+.habit-multi-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+  margin-bottom: 28rpx;
+}
+
+.habit-multi-item {
+  background-color: #f8fafc;
+  border: 2rpx solid #e2e8f0;
+  border-radius: 20rpx;
+  padding: 18rpx 20rpx;
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.habit-multi-selected {
+  background-color: #ecfdf5;
+  border-color: #059669;
+  box-shadow: 0 2rpx 8rpx rgba(5, 150, 105, 0.15);
+}
+
+.habit-multi-status-icon {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 10rpx;
+  background-color: #ffffff;
+  border: 2rpx solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+  font-weight: bold;
+  color: #94a3b8;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.habit-multi-selected .habit-multi-status-icon {
+  background-color: #059669;
+  border-color: #059669;
+  color: #ffffff;
+}
+
+.habit-multi-name {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #334155;
+  flex: 1;
+}
+
+.habit-multi-selected .habit-multi-name {
+  color: #065f46;
+  font-weight: bold;
+}
+

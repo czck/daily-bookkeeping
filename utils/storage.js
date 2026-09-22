@@ -452,6 +452,80 @@ function deleteDayHabit(groupId, habitTag) {
   return true;
 }
 
+/**
+ * 修改读书随记或旅途漫记，支持平移日期
+ */
+function updateLifeBlock({ groupId, blockType, newDate, data }) {
+  const bills = getBills();
+  const group = bills.find(g => g.id === groupId);
+  if (!group) return false;
+
+  let blockData = null;
+  if (blockType === 'book') {
+    blockData = {
+      title: data.title.startsWith('《') ? data.title : `《${data.title}》`,
+      progress: data.progress || '进行中',
+      quote: data.quote || ''
+    };
+  } else if (blockType === 'travel') {
+    blockData = {
+      location: data.location || '漫游',
+      tag: data.tag || '漫游',
+      notes: data.notes || ''
+    };
+  }
+  if (!blockData) return false;
+
+  // 检查是否修改了日期
+  if (newDate && newDate !== group.date) {
+    if (blockType === 'book') delete group.book;
+    if (blockType === 'travel') delete group.travel;
+
+    const targetGroup = findOrCreateGroup(bills, newDate);
+    if (blockType === 'book') targetGroup.book = blockData;
+    if (blockType === 'travel') targetGroup.travel = blockData;
+
+    if ((!group.items || group.items.length === 0) && !group.book && !group.travel && (!group.tags || group.tags.length === 0)) {
+      const gIdx = bills.findIndex(g => g.id === groupId);
+      if (gIdx >= 0) bills.splice(gIdx, 1);
+    }
+  } else {
+    if (blockType === 'book') group.book = blockData;
+    if (blockType === 'travel') group.travel = blockData;
+  }
+
+  setBills(bills);
+  return true;
+}
+
+/**
+ * 修改某日的生活打卡组合，支持平移日期
+ */
+function updateDayHabits({ groupId, newDate, tags }) {
+  const bills = getBills();
+  const group = bills.find(g => g.id === groupId);
+  if (!group) return false;
+
+  const finalTags = Array.isArray(tags) ? Array.from(new Set(tags.filter(Boolean))) : [];
+
+  if (newDate && newDate !== group.date) {
+    delete group.tags;
+
+    const targetGroup = findOrCreateGroup(bills, newDate);
+    targetGroup.tags = finalTags;
+
+    if ((!group.items || group.items.length === 0) && !group.book && !group.travel && (!group.tags || group.tags.length === 0)) {
+      const gIdx = bills.findIndex(g => g.id === groupId);
+      if (gIdx >= 0) bills.splice(gIdx, 1);
+    }
+  } else {
+    group.tags = finalTags;
+  }
+
+  setBills(bills);
+  return true;
+}
+
 function exportBillsAsText(bills) {
   const list = bills || getBills();
   const textParts = ['日常消费与生活手帐清单\n'];
@@ -555,7 +629,9 @@ module.exports = {
   updateBillItem,
   deleteBillItem,
   deleteLifeBlock,
+  updateLifeBlock,
   deleteDayHabit,
+  updateDayHabits,
   exportBillsAsText,
   clearAllBills,
   cleanTestData,

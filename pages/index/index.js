@@ -15,7 +15,9 @@ const {
   updateBillItem,
   deleteBillItem,
   deleteLifeBlock,
+  updateLifeBlock,
   deleteDayHabit,
+  updateDayHabits,
   exportBillsAsText,
   cleanTestData,
   clearAllBills
@@ -147,6 +149,36 @@ Page({
     editDateString: '',
     editDateShort: '',
     editDateDisplay: '',
+
+    // 读书随记修改弹窗状态
+    showEditBookModal: false,
+    editBookGroupId: '',
+    editBookTitle: '',
+    editBookProgress: '',
+    editBookQuote: '',
+    editBookDateString: '',
+    editBookDateShort: '',
+    editBookDateDisplay: '',
+
+    // 旅途漫记修改弹窗状态
+    showEditTravelModal: false,
+    editTravelGroupId: '',
+    editTravelLocation: '',
+    editTravelTag: '',
+    editTravelNotes: '',
+    editTravelDateString: '',
+    editTravelDateShort: '',
+    editTravelDateDisplay: '',
+
+    // 打卡修改弹窗状态
+    showEditHabitModal: false,
+    editHabitGroupId: '',
+    editHabitSelectedTags: [],
+    editHabitSelectedMap: {},
+    editHabitAvailableTags: [],
+    editHabitDateString: '',
+    editHabitDateShort: '',
+    editHabitDateDisplay: '',
 
     // 微信云端同步状态
     cloudStatus: {
@@ -1143,14 +1175,32 @@ Page({
     });
   },
 
+  _getDateParts(dateStr) {
+    const dObj = parseToDate(dateStr);
+    const y = dObj.getFullYear();
+    const m = String(dObj.getMonth() + 1).padStart(2, '0');
+    const d = String(dObj.getDate()).padStart(2, '0');
+    return {
+      ymd: `${y}-${m}-${d}`,
+      short: dateStr,
+      display: `${dObj.getMonth() + 1}月${dObj.getDate()}日`
+    };
+  },
+
   handleTapLifeBlock(e) {
     const { groupId, type } = e.currentTarget.dataset;
     const typeLabel = type === 'book' ? '读书随记' : '旅途漫记';
     wx.showActionSheet({
-      itemList: [`🗑️ 删除此条${typeLabel}`],
-      itemColor: '#ef4444',
+      itemList: [`✏️ 修改${typeLabel}内容与日期`, `🗑️ 删除此条${typeLabel}`],
+      itemColor: '#1e293b',
       success: (res) => {
         if (res.tapIndex === 0) {
+          if (type === 'book') {
+            this.openEditBookModal(groupId);
+          } else {
+            this.openEditTravelModal(groupId);
+          }
+        } else if (res.tapIndex === 1) {
           wx.showModal({
             title: `删除${typeLabel}`,
             content: `确定要删除该条${typeLabel}吗？`,
@@ -1169,22 +1219,315 @@ Page({
     });
   },
 
-  handleTapDayHabit(e) {
-    const { groupId, tag } = e.currentTarget.dataset;
+  /* ------------------- 读书随记修改弹窗 ------------------- */
+  openEditBookModal(groupId) {
+    const group = this.data.bills.find(g => g.id === groupId);
+    if (!group || !group.book) return;
+    const dateInfo = this._getDateParts(group.date);
+    let title = group.book.title || '';
+    if (title.startsWith('《') && title.endsWith('》')) {
+      title = title.slice(1, -1);
+    }
+    this.setData({
+      showEditBookModal: true,
+      editBookGroupId: groupId,
+      editBookTitle: title,
+      editBookProgress: group.book.progress || '',
+      editBookQuote: group.book.quote || '',
+      editBookDateString: dateInfo.ymd,
+      editBookDateShort: dateInfo.short,
+      editBookDateDisplay: dateInfo.display
+    });
+  },
+
+  closeEditBookModal() {
+    this.setData({ showEditBookModal: false });
+  },
+
+  onEditBookTitleInput(e) {
+    this.setData({ editBookTitle: e.detail.value });
+  },
+
+  onEditBookProgressInput(e) {
+    this.setData({ editBookProgress: e.detail.value });
+  },
+
+  onEditBookQuoteInput(e) {
+    this.setData({ editBookQuote: e.detail.value });
+  },
+
+  onEditBookDateChange(e) {
+    const ymd = e.detail.value;
+    const parts = ymd.split('-');
+    const m = parseInt(parts[1], 10);
+    const d = parseInt(parts[2], 10);
+    this.setData({
+      editBookDateString: ymd,
+      editBookDateShort: `${m}.${d}`,
+      editBookDateDisplay: `${m}月${d}日`
+    });
+  },
+
+  handleSaveEditBook() {
+    const { editBookGroupId, editBookTitle, editBookProgress, editBookQuote, editBookDateShort } = this.data;
+    const title = (editBookTitle || '').trim();
+    if (!title) {
+      wx.showToast({ title: '请输入书名', icon: 'none' });
+      return;
+    }
+    const ok = updateLifeBlock({
+      groupId: editBookGroupId,
+      blockType: 'book',
+      newDate: editBookDateShort,
+      data: {
+        title,
+        progress: (editBookProgress || '').trim() || '进行中',
+        quote: (editBookQuote || '').trim()
+      }
+    });
+    if (ok) {
+      this.setData({ showEditBookModal: false });
+      this.refreshData();
+      wx.showToast({ title: '✓ 已更新读书随记', icon: 'success' });
+    } else {
+      wx.showToast({ title: '更新失败', icon: 'none' });
+    }
+  },
+
+  handleDeleteBookDirect() {
+    const { editBookGroupId } = this.data;
     wx.showModal({
-      title: '取消打卡',
-      content: `确定取消该日的「${tag}」打卡吗？`,
+      title: '删除读书随记',
+      content: '确定要删除该条读书随记吗？',
       confirmColor: '#ef4444',
-      confirmText: '取消打卡',
+      confirmText: '确定删除',
       success: (res) => {
         if (res.confirm) {
-          deleteDayHabit(groupId, tag);
+          deleteLifeBlock(editBookGroupId, 'book');
+          this.setData({ showEditBookModal: false });
           this.refreshData();
-          wx.showToast({ title: '已取消打卡', icon: 'none' });
+          wx.showToast({ title: '已删除读书随记', icon: 'none' });
         }
       }
     });
   },
+
+  /* ------------------- 旅途漫记修改弹窗 ------------------- */
+  openEditTravelModal(groupId) {
+    const group = this.data.bills.find(g => g.id === groupId);
+    if (!group || !group.travel) return;
+    const dateInfo = this._getDateParts(group.date);
+    this.setData({
+      showEditTravelModal: true,
+      editTravelGroupId: groupId,
+      editTravelLocation: group.travel.location || '',
+      editTravelTag: group.travel.tag || '周末漫游',
+      editTravelNotes: group.travel.notes || '',
+      editTravelDateString: dateInfo.ymd,
+      editTravelDateShort: dateInfo.short,
+      editTravelDateDisplay: dateInfo.display
+    });
+  },
+
+  closeEditTravelModal() {
+    this.setData({ showEditTravelModal: false });
+  },
+
+  onEditTravelLocationInput(e) {
+    this.setData({ editTravelLocation: e.detail.value });
+  },
+
+  onEditTravelTagInput(e) {
+    this.setData({ editTravelTag: e.detail.value });
+  },
+
+  onEditTravelNotesInput(e) {
+    this.setData({ editTravelNotes: e.detail.value });
+  },
+
+  onEditTravelDateChange(e) {
+    const ymd = e.detail.value;
+    const parts = ymd.split('-');
+    const m = parseInt(parts[1], 10);
+    const d = parseInt(parts[2], 10);
+    this.setData({
+      editTravelDateString: ymd,
+      editTravelDateShort: `${m}.${d}`,
+      editTravelDateDisplay: `${m}月${d}日`
+    });
+  },
+
+  handleSaveEditTravel() {
+    const { editTravelGroupId, editTravelLocation, editTravelTag, editTravelNotes, editTravelDateShort } = this.data;
+    const location = (editTravelLocation || '').trim();
+    if (!location) {
+      wx.showToast({ title: '请输入地点或景点', icon: 'none' });
+      return;
+    }
+    const ok = updateLifeBlock({
+      groupId: editTravelGroupId,
+      blockType: 'travel',
+      newDate: editTravelDateShort,
+      data: {
+        location,
+        tag: (editTravelTag || '').trim() || '周末漫游',
+        notes: (editTravelNotes || '').trim()
+      }
+    });
+    if (ok) {
+      this.setData({ showEditTravelModal: false });
+      this.refreshData();
+      wx.showToast({ title: '✓ 已更新旅途漫记', icon: 'success' });
+    } else {
+      wx.showToast({ title: '更新失败', icon: 'none' });
+    }
+  },
+
+  handleDeleteTravelDirect() {
+    const { editTravelGroupId } = this.data;
+    wx.showModal({
+      title: '删除旅途漫记',
+      content: '确定要删除该条旅途漫记吗？',
+      confirmColor: '#ef4444',
+      confirmText: '确定删除',
+      success: (res) => {
+        if (res.confirm) {
+          deleteLifeBlock(editTravelGroupId, 'travel');
+          this.setData({ showEditTravelModal: false });
+          this.refreshData();
+          wx.showToast({ title: '已删除旅途漫记', icon: 'none' });
+        }
+      }
+    });
+  },
+
+  /* ------------------- 打卡记录修改弹窗 ------------------- */
+  handleTapDayHabit(e) {
+    const { groupId, tag } = e.currentTarget.dataset;
+    wx.showActionSheet({
+      itemList: ['✏️ 修改该日打卡项与日期', `🗑️ 取消打卡「${tag}」`],
+      itemColor: '#1e293b',
+      success: (res) => {
+        if (res.tapIndex === 0) {
+          this.openEditHabitModal(groupId);
+        } else if (res.tapIndex === 1) {
+          wx.showModal({
+            title: '取消打卡',
+            content: `确定取消该日的「${tag}」打卡吗？`,
+            confirmColor: '#ef4444',
+            confirmText: '取消打卡',
+            success: (r) => {
+              if (r.confirm) {
+                deleteDayHabit(groupId, tag);
+                this.refreshData();
+                wx.showToast({ title: '已取消打卡', icon: 'none' });
+              }
+            }
+          });
+        }
+      }
+    });
+  },
+
+  handleOpenEditHabits(e) {
+    const { groupId } = e.currentTarget.dataset;
+    this.openEditHabitModal(groupId);
+  },
+
+  _buildHabitMap(tags) {
+    const map = {};
+    (tags || []).forEach(t => { map[t] = true; });
+    return map;
+  },
+
+  openEditHabitModal(groupId) {
+    const group = this.data.bills.find(g => g.id === groupId);
+    if (!group) return;
+    const dateInfo = this._getDateParts(group.date);
+    const currentTags = group.tags || [];
+    const available = Array.from(new Set([...(this.data.customHabits || []), ...currentTags]));
+    this.setData({
+      showEditHabitModal: true,
+      editHabitGroupId: groupId,
+      editHabitSelectedTags: [...currentTags],
+      editHabitSelectedMap: this._buildHabitMap(currentTags),
+      editHabitAvailableTags: available,
+      editHabitDateString: dateInfo.ymd,
+      editHabitDateShort: dateInfo.short,
+      editHabitDateDisplay: dateInfo.display
+    });
+  },
+
+  closeEditHabitModal() {
+    this.setData({ showEditHabitModal: false });
+  },
+
+  toggleEditHabitTag(e) {
+    const tag = e.currentTarget.dataset.tag;
+    let selected = [...this.data.editHabitSelectedTags];
+    const idx = selected.indexOf(tag);
+    if (idx >= 0) {
+      selected.splice(idx, 1);
+    } else {
+      selected.push(tag);
+    }
+    this.setData({ 
+      editHabitSelectedTags: selected,
+      editHabitSelectedMap: this._buildHabitMap(selected)
+    });
+  },
+
+  onEditHabitDateChange(e) {
+    const ymd = e.detail.value;
+    const parts = ymd.split('-');
+    const m = parseInt(parts[1], 10);
+    const d = parseInt(parts[2], 10);
+    this.setData({
+      editHabitDateString: ymd,
+      editHabitDateShort: `${m}.${d}`,
+      editHabitDateDisplay: `${m}月${d}日`
+    });
+  },
+
+  handleSaveEditHabits() {
+    const { editHabitGroupId, editHabitSelectedTags, editHabitDateShort } = this.data;
+    const ok = updateDayHabits({
+      groupId: editHabitGroupId,
+      newDate: editHabitDateShort,
+      tags: editHabitSelectedTags
+    });
+    if (ok) {
+      this.setData({ showEditHabitModal: false });
+      this.refreshData();
+      wx.showToast({ title: '✓ 已更新打卡记录', icon: 'success' });
+    } else {
+      wx.showToast({ title: '更新失败', icon: 'none' });
+    }
+  },
+
+  handleClearDayHabitsDirect() {
+    const { editHabitGroupId, editHabitDateShort } = this.data;
+    wx.showModal({
+      title: '清空该日打卡',
+      content: '确定要清空该天的所有打卡记录吗？',
+      confirmColor: '#ef4444',
+      confirmText: '确定清空',
+      success: (res) => {
+        if (res.confirm) {
+          updateDayHabits({
+            groupId: editHabitGroupId,
+            newDate: editHabitDateShort,
+            tags: []
+          });
+          this.setData({ showEditHabitModal: false });
+          this.refreshData();
+          wx.showToast({ title: '已清空打卡', icon: 'none' });
+        }
+      }
+    });
+  },
+
+  preventBubble() {},
 
   handleDeleteGroup(e) {
     const { id, date } = e.currentTarget.dataset;
