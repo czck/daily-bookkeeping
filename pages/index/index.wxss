@@ -1827,4 +1827,100 @@
   opacity: 0.7;
 }
 
+/* 顶部资产概览微型胶囊按钮 */
+.asset-quick-btn {
+  background: rgba(15, 23, 42, 0.06);
+  border: 1rpx solid rgba(15, 23, 42, 0.1);
+  color: #1e293b;
+  font-weight: 600;
+  font-size: 22rpx;
+  display: inline-flex;
+  align-items: center;
+  gap: 6rpx;
+  padding: 8rpx 18rpx;
+  border-radius: 20rpx;
+}
+
+/* 账单流水的账户标签 */
+.item-name-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.item-acc-tag {
+  display: inline-block;
+  align-self: flex-start;
+  font-size: 18rpx;
+  color: #059669;
+  background-color: #ecfdf5;
+  border-radius: 6rpx;
+  padding: 2rpx 8rpx;
+  margin-top: 4rpx;
+  font-weight: 500;
+}
+
+/* 弹窗中的扣款账户选择器 */
+.account-select-section {
+  margin: 18rpx 0 24rpx;
+}
+
+.account-select-label {
+  display: block;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 12rpx;
+}
+
+.account-pill-scroll {
+  white-space: nowrap;
+  width: 100%;
+  display: flex;
+  gap: 12rpx;
+  padding: 4rpx 0 10rpx;
+}
+
+.account-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8rpx;
+  background: #f8fafc;
+  border: 1.5rpx solid #e2e8f0;
+  padding: 10rpx 20rpx;
+  border-radius: 20rpx;
+  margin-right: 12rpx;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.account-pill-active {
+  background: #ecfdf5;
+  border-color: #07C160;
+  box-shadow: 0 2rpx 10rpx rgba(7, 193, 96, 0.15);
+}
+
+.acc-pill-emoji {
+  font-size: 24rpx;
+}
+
+.acc-pill-name {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.account-pill-active .acc-pill-name {
+  color: #059669;
+}
+
+.acc-pill-bal {
+  font-size: 20rpx;
+  color: #94a3b8;
+}
+
+.account-pill-active .acc-pill-bal {
+  color: #10b981;
+}
+
 

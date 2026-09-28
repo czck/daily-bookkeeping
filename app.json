@@ -1,7 +1,8 @@
 {
   "pages": [
     "pages/index/index",
-    "pages/chart/chart"
+    "pages/chart/chart",
+    "pages/asset/asset"
   ],
   "window": {
     "backgroundTextStyle": "light",
@@ -28,6 +29,12 @@
         "text": "统计图表",
         "iconPath": "images/tab_chart.png",
         "selectedIconPath": "images/tab_chart_active.png"
+      },
+      {
+        "pagePath": "pages/asset/asset",
+        "text": "资产总览",
+        "iconPath": "images/tab_asset.png",
+        "selectedIconPath": "images/tab_asset_active.png"
       }
     ]
   },

@@ -1,0 +1,733 @@
+/* pages/asset/asset.wxss */
+.asset-container {
+  padding: 24rpx;
+  background-color: #F7F8FA;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+/* 1. 顶部总资产主卡片 - 黑曜石与翠绿微光质感 */
+.net-asset-card {
+  position: relative;
+  background: linear-gradient(135deg, #111827 0%, #1f2937 60%, #0f172a 100%);
+  border-radius: 36rpx;
+  padding: 36rpx 32rpx;
+  color: #ffffff;
+  box-shadow: 0 12rpx 32rpx rgba(17, 24, 39, 0.16);
+  overflow: hidden;
+  margin-bottom: 24rpx;
+}
+
+.card-bg-glow {
+  position: absolute;
+  top: -60rpx;
+  right: -60rpx;
+  width: 240rpx;
+  height: 240rpx;
+  background: radial-gradient(circle, rgba(7, 193, 96, 0.25) 0%, rgba(7, 193, 96, 0) 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.card-subtitle {
+  font-size: 26rpx;
+  color: #94a3b8;
+  font-weight: 500;
+  letter-spacing: 1rpx;
+}
+
+.privacy-btn {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.12);
+  padding: 6rpx 16rpx;
+  border-radius: 20rpx;
+  backdrop-filter: blur(8px);
+}
+
+.privacy-icon {
+  font-size: 24rpx;
+  margin-right: 6rpx;
+}
+
+.privacy-text {
+  font-size: 20rpx;
+  color: #cbd5e1;
+}
+
+.header-tag {
+  display: flex;
+  align-items: center;
+  background: rgba(7, 193, 96, 0.15);
+  border: 1rpx solid rgba(7, 193, 96, 0.3);
+  padding: 6rpx 16rpx;
+  border-radius: 20rpx;
+}
+
+.sync-dot {
+  width: 12rpx;
+  height: 12rpx;
+  border-radius: 50%;
+  background-color: #07C160;
+  margin-right: 8rpx;
+  box-shadow: 0 0 8rpx #07C160;
+}
+
+.sync-text {
+  font-size: 20rpx;
+  color: #07C160;
+  font-weight: 600;
+}
+
+.asset-amount-wrap {
+  display: flex;
+  align-items: baseline;
+  margin: 16rpx 0 32rpx;
+}
+
+.currency-symbol {
+  font-size: 40rpx;
+  font-weight: 600;
+  color: #07C160;
+  margin-right: 8rpx;
+}
+
+.asset-amount-val {
+  font-size: 64rpx;
+  font-weight: 700;
+  letter-spacing: -1rpx;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #ffffff;
+}
+
+.card-footer-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 20rpx;
+  padding: 18rpx 24rpx;
+}
+
+.footer-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.stat-num {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 4rpx;
+}
+
+.stat-label {
+  font-size: 20rpx;
+  color: #94a3b8;
+}
+
+.footer-divider {
+  width: 1rpx;
+  height: 36rpx;
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+/* 2. 快捷操作金刚区 */
+.action-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+}
+
+.action-item {
+  background: #ffffff;
+  border-radius: 24rpx;
+  padding: 24rpx 12rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.02);
+  transition: transform 0.15s ease;
+}
+
+.action-icon-circle {
+  width: 76rpx;
+  height: 76rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12rpx;
+}
+
+.action-emoji {
+  font-size: 34rpx;
+}
+
+.bg-emerald {
+  background-color: #ecfdf5;
+  color: #059669;
+}
+.bg-indigo {
+  background-color: #e0e7ff;
+  color: #4338ca;
+}
+.bg-amber {
+  background-color: #fef3c7;
+  color: #d97706;
+}
+.bg-purple {
+  background-color: #f3e8ff;
+  color: #7e22ce;
+}
+
+.action-title {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 4rpx;
+}
+
+.action-sub {
+  font-size: 18rpx;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+/* 3. 通用白色区块卡片 */
+.section-card {
+  background: #ffffff;
+  border-radius: 28rpx;
+  padding: 28rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.03);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24rpx;
+}
+
+.section-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.section-badge {
+  font-size: 20rpx;
+  color: #059669;
+  background: #ecfdf5;
+  padding: 4rpx 14rpx;
+  border-radius: 12rpx;
+  font-weight: 600;
+}
+
+.section-action-btn {
+  font-size: 24rpx;
+  color: #07C160;
+  font-weight: 600;
+  padding: 8rpx 16rpx;
+  background: #f0fdf4;
+  border-radius: 16rpx;
+}
+
+.section-hint {
+  font-size: 22rpx;
+  color: #94a3b8;
+}
+
+/* 资金账户列表 */
+.accounts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.account-card {
+  border: 1rpx solid #f1f5f9;
+  border-radius: 20rpx;
+  padding: 20rpx 20rpx 16rpx;
+  background: #fafafa;
+}
+
+.account-card-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.acc-avatar {
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 18rpx;
+  background: #ffffff;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 18rpx;
+  flex-shrink: 0;
+}
+
+.acc-emoji {
+  font-size: 34rpx;
+}
+
+.acc-info {
+  flex: 1;
+  margin-right: 20rpx;
+}
+
+.acc-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin-bottom: 8rpx;
+}
+
+.acc-name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.acc-percent-tag {
+  font-size: 18rpx;
+  color: #64748b;
+  background: #e2e8f0;
+  padding: 2rpx 10rpx;
+  border-radius: 8rpx;
+}
+
+.acc-progress-track {
+  width: 100%;
+  height: 8rpx;
+  background: #e2e8f0;
+  border-radius: 4rpx;
+  overflow: hidden;
+}
+
+.acc-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #34d399, #07C160);
+  border-radius: 4rpx;
+  transition: width 0.3s ease;
+}
+
+.acc-balance-wrap {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.acc-balance {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #0f172a;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.account-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 14rpx;
+  margin-top: 16rpx;
+  padding-top: 14rpx;
+  border-top: 1rpx dashed #e2e8f0;
+}
+
+.acc-action-pill {
+  font-size: 22rpx;
+  color: #475569;
+  background: #ffffff;
+  border: 1rpx solid #e2e8f0;
+  padding: 6rpx 18rpx;
+  border-radius: 14rpx;
+  font-weight: 500;
+}
+
+.delete-pill {
+  color: #ef4444;
+  border-color: #fee2e2;
+  background: #fff5f5;
+}
+
+/* 4. 流水明细 */
+.logs-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.log-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18rpx 0;
+  border-bottom: 1rpx solid #f1f5f9;
+}
+
+.log-item:last-child {
+  border-bottom: none;
+}
+
+.log-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  margin-right: 20rpx;
+}
+
+.log-badge {
+  font-size: 20rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 10rpx;
+  font-weight: 600;
+  margin-right: 16rpx;
+  flex-shrink: 0;
+}
+
+.log-badge.type-expense {
+  background: #fee2e2;
+  color: #ef4444;
+}
+.log-badge.type-income {
+  background: #ecfdf5;
+  color: #059669;
+}
+.log-badge.type-transfer {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+.log-badge.type-adjust {
+  background: #fef3c7;
+  color: #d97706;
+}
+.log-badge.type-refund {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.log-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.log-note {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 4rpx;
+  max-width: 380rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.log-meta {
+  display: flex;
+  align-items: center;
+  font-size: 20rpx;
+  color: #94a3b8;
+}
+
+.log-dot {
+  margin: 0 6rpx;
+}
+
+.log-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.log-amount {
+  font-size: 28rpx;
+  font-weight: 700;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.log-amount.type-expense {
+  color: #ef4444;
+}
+.log-amount.type-income {
+  color: #059669;
+}
+.log-amount.type-transfer {
+  color: #4338ca;
+}
+.log-amount.type-adjust {
+  color: #d97706;
+}
+.log-amount.type-refund {
+  color: #16a34a;
+}
+
+.log-balance-after {
+  font-size: 18rpx;
+  color: #94a3b8;
+  margin-top: 2rpx;
+}
+
+.empty-logs {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48rpx 0;
+}
+
+.empty-emoji {
+  font-size: 64rpx;
+  margin-bottom: 12rpx;
+}
+
+.empty-tip {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 6rpx;
+}
+
+.empty-sub {
+  font-size: 22rpx;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.bottom-safe-space {
+  height: 60rpx;
+}
+
+/* ================= 弹窗公共设计 ================= */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  backdrop-filter: blur(4px);
+}
+
+.modal-card {
+  width: 88%;
+  background: #ffffff;
+  border-radius: 32rpx;
+  padding: 36rpx;
+  box-shadow: 0 16rpx 48rpx rgba(0, 0, 0, 0.2);
+  animation: modalScale 0.2s ease-out;
+}
+
+@keyframes modalScale {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28rpx;
+}
+
+.modal-title {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.modal-close {
+  width: 52rpx;
+  height: 52rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30rpx;
+  color: #94a3b8;
+  border-radius: 50%;
+  background: #f1f5f9;
+}
+
+.input-label {
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #475569;
+  margin: 18rpx 0 10rpx;
+}
+
+.picker-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20rpx 24rpx;
+  background: #f8fafc;
+  border: 1rpx solid #e2e8f0;
+  border-radius: 20rpx;
+  font-size: 26rpx;
+  color: #1e293b;
+}
+
+.picker-arrow {
+  font-size: 20rpx;
+  color: #94a3b8;
+}
+
+.input-group {
+  display: flex;
+  align-items: center;
+  background: #f8fafc;
+  border: 1rpx solid #e2e8f0;
+  border-radius: 20rpx;
+  padding: 0 24rpx;
+}
+
+.input-prefix {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #059669;
+  margin-right: 12rpx;
+}
+
+.input-field {
+  flex: 1;
+  height: 84rpx;
+  font-size: 28rpx;
+  color: #1e293b;
+}
+
+.amount-input {
+  font-size: 38rpx;
+  font-weight: 700;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 36rpx;
+}
+
+.btn-cancel {
+  flex: 1;
+  height: 84rpx;
+  line-height: 84rpx;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 28rpx;
+  font-weight: 600;
+  border-radius: 20rpx;
+  border: none;
+}
+
+.btn-confirm {
+  flex: 1.5;
+  height: 84rpx;
+  line-height: 84rpx;
+  color: #ffffff;
+  font-size: 28rpx;
+  font-weight: 600;
+  border-radius: 20rpx;
+  border: none;
+}
+
+.btn-confirm.bg-emerald {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+.btn-confirm.bg-indigo {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+}
+.btn-confirm.bg-amber {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+.btn-confirm.bg-purple {
+  background: linear-gradient(135deg, #a855f7, #7e22ce);
+}
+
+/* 内部转账专属布局 */
+.transfer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+
+.transfer-col {
+  flex: 1;
+}
+
+.transfer-arrow-icon {
+  font-size: 36rpx;
+  color: #6366f1;
+  padding-top: 36rpx;
+}
+
+.picker-box-compact {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18rpx 16rpx;
+  background: #f8fafc;
+  border: 1rpx solid #e2e8f0;
+  border-radius: 18rpx;
+  font-size: 24rpx;
+  color: #1e293b;
+}
+
+/* 新建账户表情选择 */
+.emoji-scroll-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin: 10rpx 0;
+}
+
+.emoji-badge {
+  width: 68rpx;
+  height: 68rpx;
+  border-radius: 18rpx;
+  background: #f8fafc;
+  border: 2rpx solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+}
+
+.emoji-badge.emoji-selected {
+  border-color: #7e22ce;
+  background: #f3e8ff;
+  transform: scale(1.08);
+}

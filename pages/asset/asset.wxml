@@ -1,0 +1,334 @@
+<!-- pages/asset/asset.wxml -->
+<view class="asset-container">
+
+  <!-- 1. 顶部总资产主卡片 -->
+  <view class="net-asset-card">
+    <view class="card-bg-glow"></view>
+    <view class="card-header">
+      <view class="header-left">
+        <text class="card-subtitle">总净资产 (元)</text>
+        <view class="privacy-btn" bindtap="togglePrivacy" hover-class="btn-hover">
+          <text class="privacy-icon">{{isPrivacyHide ? '🙈' : '👁️'}}</text>
+          <text class="privacy-text">{{isPrivacyHide ? '已隐藏' : '显示中'}}</text>
+        </view>
+      </view>
+      <view class="header-tag">
+        <text class="sync-dot"></text>
+        <text class="sync-text">实时联动</text>
+      </view>
+    </view>
+
+    <view class="asset-amount-wrap">
+      <text class="currency-symbol">{{isPrivacyHide ? '' : '¥'}}</text>
+      <text class="asset-amount-val">{{isPrivacyHide ? '••••••' : totalAssets}}</text>
+    </view>
+
+    <view class="card-footer-info">
+      <view class="footer-stat-item">
+        <text class="stat-num">{{accounts.length}}</text>
+        <text class="stat-label">在管资金账户</text>
+      </view>
+      <view class="footer-divider"></view>
+      <view class="footer-stat-item">
+        <text class="stat-num">{{logs.length}}</text>
+        <text class="stat-label">资产明细记录</text>
+      </view>
+      <view class="footer-divider"></view>
+      <view class="footer-stat-item">
+        <text class="stat-num">微信云</text>
+        <text class="stat-label">双端云备份</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 2. 快捷操作金刚区 -->
+  <view class="action-grid">
+    <view class="action-item" bindtap="openDepositModal" hover-class="btn-hover">
+      <view class="action-icon-circle bg-emerald">
+        <text class="action-emoji">➕</text>
+      </view>
+      <text class="action-title">存入/进账</text>
+      <text class="action-sub">充值·工资收入</text>
+    </view>
+
+    <view class="action-item" bindtap="openTransferModal" hover-class="btn-hover">
+      <view class="action-icon-circle bg-indigo">
+        <text class="action-emoji">⇄</text>
+      </view>
+      <text class="action-title">内部转账</text>
+      <text class="action-sub">账户资金调配</text>
+    </view>
+
+    <view class="action-item" bindtap="openCalibrateModal" hover-class="btn-hover">
+      <view class="action-icon-circle bg-amber">
+        <text class="action-emoji">⚖️</text>
+      </view>
+      <text class="action-title">余额校准</text>
+      <text class="action-sub">平账·误差对齐</text>
+    </view>
+
+    <view class="action-item" bindtap="openAddAccModal" hover-class="btn-hover">
+      <view class="action-icon-circle bg-purple">
+        <text class="action-emoji">💳</text>
+      </view>
+      <text class="action-title">新建账户</text>
+      <text class="action-sub">添加卡包/资产</text>
+    </view>
+  </view>
+
+  <!-- 3. 资金账户列表 -->
+  <view class="section-card">
+    <view class="section-header">
+      <view class="section-title-wrap">
+        <text class="section-title">资金账户</text>
+        <text class="section-badge">{{accounts.length}}个</text>
+      </view>
+      <view class="section-action-btn" bindtap="openAddAccModal" hover-class="btn-hover">
+        <text>+ 添加</text>
+      </view>
+    </view>
+
+    <view class="accounts-list">
+      <block wx:for="{{accounts}}" wx:key="id">
+        <view class="account-card">
+          <view class="account-card-main">
+            <view class="acc-avatar">
+              <text class="acc-emoji">{{item.emoji}}</text>
+            </view>
+            <view class="acc-info">
+              <view class="acc-name-row">
+                <text class="acc-name">{{item.name}}</text>
+                <text class="acc-percent-tag" wx:if="{{item.percent > 0}}">{{item.percent}}% 占比</text>
+              </view>
+              <view class="acc-progress-track">
+                <view class="acc-progress-bar" style="width: {{item.percent}}%;"></view>
+              </view>
+            </view>
+            <view class="acc-balance-wrap">
+              <text class="acc-balance">{{isPrivacyHide ? '••••' : ('¥ ' + item.balanceDisplay)}}</text>
+            </view>
+          </view>
+
+          <!-- 账户快捷工具条 -->
+          <view class="account-card-actions">
+            <view class="acc-action-pill" data-id="{{item.id}}" bindtap="openDepositModal" hover-class="btn-hover">
+              <text>➕ 存入</text>
+            </view>
+            <view class="acc-action-pill" data-id="{{item.id}}" bindtap="openCalibrateModal" hover-class="btn-hover">
+              <text>⚖️ 校准</text>
+            </view>
+            <view class="acc-action-pill delete-pill" data-id="{{item.id}}" bindtap="handleDeleteAccount" hover-class="btn-hover">
+              <text>🗑️ 删除</text>
+            </view>
+          </view>
+        </view>
+      </block>
+    </view>
+  </view>
+
+  <!-- 4. 资产变动流水明细 -->
+  <view class="section-card">
+    <view class="section-header">
+      <view class="section-title-wrap">
+        <text class="section-title">近期资金变动</text>
+        <text class="section-badge">实时记账联动</text>
+      </view>
+      <text class="section-hint">记账自动扣减</text>
+    </view>
+
+    <view class="logs-list" wx:if="{{logs.length > 0}}">
+      <block wx:for="{{logs}}" wx:key="id">
+        <view class="log-item">
+          <view class="log-left">
+            <view class="log-badge {{item.typeClass}}">
+              <text>{{item.typeBadge}}</text>
+            </view>
+            <view class="log-details">
+              <text class="log-note">{{item.note || item.accountName}}</text>
+              <view class="log-meta">
+                <text class="log-acc-name">{{item.accountName}}</text>
+                <text class="log-dot">·</text>
+                <text class="log-time">{{item.timeStr}}</text>
+              </view>
+            </view>
+          </view>
+          <view class="log-right">
+            <text class="log-amount {{item.typeClass}}">{{item.sign}}{{item.amountDisplay}}</text>
+            <text class="log-balance-after" wx:if="{{item.balanceAfterDisplay}}">余: ¥{{item.balanceAfterDisplay}}</text>
+          </view>
+        </view>
+      </block>
+    </view>
+
+    <!-- 空白状态 -->
+    <view class="empty-logs" wx:if="{{logs.length === 0}}">
+      <text class="empty-emoji">🍃</text>
+      <text class="empty-tip">暂无资产变动明细</text>
+      <text class="empty-sub">日常记账、存入资金或转账时将自动实时记录在此</text>
+    </view>
+  </view>
+
+  <view class="bottom-safe-space"></view>
+
+  <!-- ================= 弹窗 1：存入/进账弹窗 ================= -->
+  <view class="modal-overlay" wx:if="{{showDepositModal}}" bindtap="closeDepositModal">
+    <view class="modal-card" catchtap="true">
+      <view class="modal-header">
+        <text class="modal-title">➕ 资金存入 / 收入记账</text>
+        <view class="modal-close" bindtap="closeDepositModal">✕</view>
+      </view>
+
+      <view class="modal-body">
+        <view class="input-label">选择目标存入账户</view>
+        <picker mode="selector" range="{{accounts}}" range-key="name" bindchange="onDepositAccChange">
+          <view class="picker-box">
+            <block wx:for="{{accounts}}" wx:key="id">
+              <text wx:if="{{item.id === depositAccountId}}">{{item.emoji}} {{item.name}} (当前余: ¥{{item.balanceDisplay}})</text>
+            </block>
+            <text class="picker-arrow">▼</text>
+          </view>
+        </picker>
+
+        <view class="input-label">存入金额 (元)</view>
+        <view class="input-group">
+          <text class="input-prefix">¥</text>
+          <input class="input-field amount-input" type="digit" placeholder="0.00" value="{{depositAmount}}" bindinput="onDepositAmountInput" focus="{{showDepositModal}}" />
+        </view>
+
+        <view class="input-label">来源备注 (如：工资收入、还钱、投资收益)</view>
+        <input class="input-field" placeholder="选填，如：工资入账" value="{{depositNote}}" bindinput="onDepositNoteInput" />
+      </view>
+
+      <view class="modal-footer">
+        <button class="btn-cancel" bindtap="closeDepositModal">取消</button>
+        <button class="btn-confirm bg-emerald" bindtap="submitDeposit">确认存入</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- ================= 弹窗 2：内部转账弹窗 ================= -->
+  <view class="modal-overlay" wx:if="{{showTransferModal}}" bindtap="closeTransferModal">
+    <view class="modal-card" catchtap="true">
+      <view class="modal-header">
+        <text class="modal-title">⇄ 账户间内部互转</text>
+        <view class="modal-close" bindtap="closeTransferModal">✕</view>
+      </view>
+
+      <view class="modal-body">
+        <view class="transfer-row">
+          <view class="transfer-col">
+            <view class="input-label">转出账户</view>
+            <picker mode="selector" range="{{accounts}}" range-key="name" bindchange="onTransferFromChange">
+              <view class="picker-box-compact">
+                <block wx:for="{{accounts}}" wx:key="id">
+                  <text wx:if="{{item.id === transferFromId}}">{{item.emoji}} {{item.name}}</text>
+                </block>
+                <text class="picker-arrow">▼</text>
+              </view>
+            </picker>
+          </view>
+
+          <view class="transfer-arrow-icon">➔</view>
+
+          <view class="transfer-col">
+            <view class="input-label">转入账户</view>
+            <picker mode="selector" range="{{accounts}}" range-key="name" bindchange="onTransferToChange">
+              <view class="picker-box-compact">
+                <block wx:for="{{accounts}}" wx:key="id">
+                  <text wx:if="{{item.id === transferToId}}">{{item.emoji}} {{item.name}}</text>
+                </block>
+                <text class="picker-arrow">▼</text>
+              </view>
+            </picker>
+          </view>
+        </view>
+
+        <view class="input-label">转账金额 (元)</view>
+        <view class="input-group">
+          <text class="input-prefix">¥</text>
+          <input class="input-field amount-input" type="digit" placeholder="0.00" value="{{transferAmount}}" bindinput="onTransferAmountInput" />
+        </view>
+
+        <view class="input-label">转账备注</view>
+        <input class="input-field" placeholder="选填，如：提现、充值零钱" value="{{transferNote}}" bindinput="onTransferNoteInput" />
+      </view>
+
+      <view class="modal-footer">
+        <button class="btn-cancel" bindtap="closeTransferModal">取消</button>
+        <button class="btn-confirm bg-indigo" bindtap="submitTransfer">确认转账</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- ================= 弹窗 3：余额校准弹窗 ================= -->
+  <view class="modal-overlay" wx:if="{{showCalibrateModal}}" bindtap="closeCalibrateModal">
+    <view class="modal-card" catchtap="true">
+      <view class="modal-header">
+        <text class="modal-title">⚖️ 账户余额校准 (平账)</text>
+        <view class="modal-close" bindtap="closeCalibrateModal">✕</view>
+      </view>
+
+      <view class="modal-body">
+        <view class="input-label">待校准账户</view>
+        <picker mode="selector" range="{{accounts}}" range-key="name" bindchange="onCalibrateAccChange">
+          <view class="picker-box">
+            <block wx:for="{{accounts}}" wx:key="id">
+              <text wx:if="{{item.id === calibrateAccountId}}">{{item.emoji}} {{item.name}} (当前账面: ¥{{item.balanceDisplay}})</text>
+            </block>
+            <text class="picker-arrow">▼</text>
+          </view>
+        </picker>
+
+        <view class="input-label">实际账户当前金额 (修改为此数值)</view>
+        <view class="input-group">
+          <text class="input-prefix">¥</text>
+          <input class="input-field amount-input" type="digit" placeholder="0.00" value="{{calibrateBalance}}" bindinput="onCalibrateBalanceInput" />
+        </view>
+
+        <view class="input-label">校准原因 / 平账说明</view>
+        <input class="input-field" placeholder="选填，如：微信提现手续费/线下零钱误差" value="{{calibrateReason}}" bindinput="onCalibrateReasonInput" />
+      </view>
+
+      <view class="modal-footer">
+        <button class="btn-cancel" bindtap="closeCalibrateModal">取消</button>
+        <button class="btn-confirm bg-amber" bindtap="submitCalibrate">更新账面</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- ================= 弹窗 4：新建账户弹窗 ================= -->
+  <view class="modal-overlay" wx:if="{{showAddAccModal}}" bindtap="closeAddAccModal">
+    <view class="modal-card" catchtap="true">
+      <view class="modal-header">
+        <text class="modal-title">💳 新建资金账户</text>
+        <view class="modal-close" bindtap="closeAddAccModal">✕</view>
+      </view>
+
+      <view class="modal-body">
+        <view class="input-label">账户名称</view>
+        <input class="input-field" placeholder="如：招商银行卡、公积金、私房钱" value="{{newAccName}}" bindinput="onNewAccNameInput" />
+
+        <view class="input-label">选择账户图标</view>
+        <view class="emoji-scroll-row">
+          <block wx:for="{{emojiList}}" wx:key="*this">
+            <view class="emoji-badge {{item === newAccEmoji ? 'emoji-selected' : ''}}" data-emoji="{{item}}" bindtap="onSelectEmoji">
+              <text>{{item}}</text>
+            </view>
+          </block>
+        </view>
+
+        <view class="input-label">初始余额 (元)</view>
+        <view class="input-group">
+          <text class="input-prefix">¥</text>
+          <input class="input-field amount-input" type="digit" placeholder="0.00" value="{{newAccBalance}}" bindinput="onNewAccBalanceInput" />
+        </view>
+      </view>
+
+      <view class="modal-footer">
+        <button class="btn-cancel" bindtap="closeAddAccModal">取消</button>
+        <button class="btn-confirm bg-purple" bindtap="submitAddAccount">创建账户</button>
+      </view>
+    </view>
+  </view>
+
+</view>

@@ -103,6 +103,15 @@ function isDateInThisMonth(dateInput, now) {
 }
 
 /**
+ * 判断是否属于指定年份
+ */
+function isDateInYear(dateInput, targetYear) {
+  if (!targetYear) return true;
+  const targetDate = dateInput instanceof Date ? dateInput : parseToDate(dateInput);
+  return targetDate.getFullYear() === parseInt(targetYear, 10);
+}
+
+/**
  * 将账单列表按自然周聚合
  */
 function aggregateBillsByWeek(bills) {
@@ -239,6 +248,7 @@ module.exports = {
   getMonthWeekInfo,
   isDateInThisWeek,
   isDateInThisMonth,
+  isDateInYear,
   aggregateBillsByWeek,
   aggregateBillsByMonth
 };

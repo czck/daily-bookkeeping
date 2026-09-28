@@ -20,7 +20,10 @@ const {
   updateDayHabits,
   exportBillsAsText,
   cleanTestData,
-  clearAllBills
+  clearAllBills,
+  getAccounts,
+  getTotalAssets,
+  getAssetPrivacy
 } = require('../../utils/storage.js');
 const { parseBillText } = require('../../utils/parser.js');
 const { SIX_MONTHS_RAW_TEXT } = require('../../utils/sample_six_months.js');
@@ -33,6 +36,7 @@ const {
 const { 
   isDateInThisWeek, 
   isDateInThisMonth, 
+  isDateInYear,
   getWeekInfo,
   getMonthInfo,
   getMonthWeekInfo,
@@ -100,6 +104,18 @@ Page({
     viewMonth: 9,
     prevMonthLabel: '8月',
     nextMonthLabel: '10月',
+
+    // 年度浏览导航状态 (全部模式下支持左右滑动与按钮切换，如 2025, 2026, 2027)
+    allYear: 2026,
+    prevYearLabel: '2025年',
+    nextYearLabel: '2027年',
+
+    // 资产联动管理与选择
+    accounts: [],
+    selectedAccountId: 'acc_wx',
+    editAccountId: 'acc_wx',
+    totalAssets: '0.00',
+    isPrivacyHide: false,
 
     // 时间轴按周期折叠数据 (二级树形折叠：月 -> 周 -> 天)
     groupedTimeline: [],
@@ -199,6 +215,7 @@ Page({
   onLoad() {
     this.loadCategories();
     this.initTodayDate();
+    this.loadAccountsData();
     this.refreshData();
 
     // 订阅微信云端同步状态变更
@@ -209,17 +226,76 @@ Page({
 
   onShow() {
     this.loadCategories();
+    this.loadAccountsData();
     this.refreshData();
   },
 
   onPullDownRefresh() {
+    this.loadAccountsData();
     this.refreshData();
     autoSyncOnLaunch((success, hasNewData) => {
+      this.loadAccountsData();
       if (hasNewData) {
         this.refreshData();
       }
       wx.stopPullDownRefresh();
     });
+  },
+
+  loadAccountsData() {
+    const rawAccounts = getAccounts();
+    const total = getTotalAssets(rawAccounts);
+    const isPrivacy = getAssetPrivacy();
+    const accounts = rawAccounts.map(acc => {
+      const b = typeof acc.balance === 'number' ? acc.balance : parseFloat(acc.balance) || 0;
+      return {
+        ...acc,
+        balanceDisplay: (Math.round(b * 100) / 100).toFixed(2)
+      };
+    });
+    this.setData({
+      accounts,
+      totalAssets: total,
+      isPrivacyHide: isPrivacy,
+      selectedAccountId: this.data.selectedAccountId || (accounts[0] ? accounts[0].id : 'acc_wx')
+    });
+  },
+
+  navigateToAssetTab() {
+    wx.switchTab({ url: '/pages/asset/asset' });
+  },
+
+  selectAccount(e) {
+    const id = e.currentTarget.dataset.id;
+    this.setData({ selectedAccountId: id });
+  },
+
+  selectEditAccount(e) {
+    const id = e.currentTarget.dataset.id;
+    this.setData({ editAccountId: id });
+  },
+
+  changeYear(delta) {
+    const curYear = this.data.allYear || new Date().getFullYear();
+    const nextYear = curYear + delta;
+    try {
+      wx.vibrateShort({ type: 'light' });
+    } catch (e) {}
+    this.setData({
+      allYear: nextYear,
+      prevYearLabel: `${nextYear - 1}年`,
+      nextYearLabel: `${nextYear + 1}年`
+    }, () => {
+      this.refreshData();
+    });
+  },
+
+  handlePrevYear() {
+    this.changeYear(-1);
+  },
+
+  handleNextYear() {
+    this.changeYear(1);
   },
 
   initTodayDate() {
@@ -239,13 +315,15 @@ Page({
   onDateChange(e) {
     const ymd = e.detail.value;
     const parts = ymd.split('-');
+    const y = parseInt(parts[0], 10);
     const m = parseInt(parts[1], 10);
     const d = parseInt(parts[2], 10);
-    const short = `${m}.${d}`;
+    const nowYear = new Date().getFullYear();
+    const short = (y !== nowYear) ? `${y}.${m}.${d}` : `${m}.${d}`;
     this.setData({
       selectedDateString: ymd,
       selectedDateShort: short,
-      selectedDateDisplay: `${m}月${d}日`
+      selectedDateDisplay: `${y !== nowYear ? (y + '年') : ''}${m}月${d}日`
     });
   },
 
@@ -312,15 +390,25 @@ Page({
 
     // 仅在明确的横向滑动（距离大于50px且横向位移大于纵向位移1.4倍，时间短于800ms）触发
     if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.4 && dt < 800) {
-      if (this.data.currentScope !== 'month') {
-        this.setData({ currentScope: 'month' });
-      }
-      if (dx > 0) {
-        // 向右滑 -> 切换到上一月
-        this.changeMonth(-1);
+      if (this.data.currentScope === 'all') {
+        if (dx > 0) {
+          // 向右滑 -> 切换到上一年
+          this.handlePrevYear();
+        } else {
+          // 向左滑 -> 切换到下一年
+          this.handleNextYear();
+        }
       } else {
-        // 向左滑 -> 切换到下一月
-        this.changeMonth(1);
+        if (this.data.currentScope !== 'month') {
+          this.setData({ currentScope: 'month' });
+        }
+        if (dx > 0) {
+          // 向右滑 -> 切换到上一月
+          this.changeMonth(-1);
+        } else {
+          // 向左滑 -> 切换到下一月
+          this.changeMonth(1);
+        }
       }
     }
   },
@@ -337,16 +425,18 @@ Page({
     const prevMonthObj = this.getAdjacentMonth(viewYear, viewMonth, -1);
     const nextMonthObj = this.getAdjacentMonth(viewYear, viewMonth, 1);
 
-    // 1. 全部统计
+    // 1. 全部统计 (基于选中的 allYear 进行年度归集)
+    const targetAllYear = this.data.allYear || now.getFullYear();
+    const allList = list.filter(g => isDateInYear(g.date, targetAllYear));
     let allTotal = 0;
     let allItemCount = 0;
     let allHabitCount = 0;
-    list.forEach(g => {
+    allList.forEach(g => {
       allTotal += (g.total || 0);
       if (g.items) allItemCount += g.items.length;
       if (g.tags && Array.isArray(g.tags)) allHabitCount += g.tags.length;
     });
-    const allDays = list.length;
+    const allDays = allList.length;
     const allAvg = allDays > 0 ? (allTotal / allDays).toFixed(2) : '0.00';
 
     // 2. 当前选中月份统计 (根据 viewYear, viewMonth)
@@ -396,9 +486,9 @@ Page({
         habits: weekHabitCount
       },
       all: {
-        title: `${now.getFullYear()}年度累计生活手记`,
+        title: `${targetAllYear}年度累计生活手记`,
         total: allTotal.toFixed(2),
-        sub: `累计 ${allItemCount} 笔消费`,
+        sub: `${targetAllYear}年累计 ${allItemCount} 笔消费`,
         days: allDays,
         avg: allAvg,
         habits: allHabitCount
@@ -407,7 +497,7 @@ Page({
 
     const curScope = this.data.currentScope || 'week';
     const activeData = this._scopesData[curScope] || this._scopesData.week;
-    const groupedTimeline = this.buildGroupedTimeline(list, curScope, viewYear, viewMonth);
+    const groupedTimeline = this.buildGroupedTimeline(list, curScope, viewYear, viewMonth, targetAllYear);
     const isAllTimelineCollapsed = this.checkAllCollapsed(groupedTimeline);
 
     this.setData({
@@ -438,12 +528,13 @@ Page({
   /**
    * 将手账列表按时间维度聚合为二级树形折叠分组 (月 -> 周 -> 日)
    */
-  buildGroupedTimeline(list, currentScope, viewYear, viewMonth) {
+  buildGroupedTimeline(list, currentScope, viewYear, viewMonth, allYear) {
     if (!list || list.length === 0) return [];
 
     const now = new Date();
     viewYear = viewYear || now.getFullYear();
     viewMonth = viewMonth || (now.getMonth() + 1);
+    allYear = allYear || (this.data && this.data.allYear) || now.getFullYear();
 
     if (!this._collapsedState) {
       this._collapsedState = {};
@@ -462,7 +553,9 @@ Page({
             amountDisplay: (Math.round(numAmt * 100) / 100).toFixed(2),
             emoji: it.emoji,
             tag: it.tag,
-            type: it.type
+            type: it.type,
+            accountId: it.accountId,
+            accountName: it.accountName
           };
         });
         return {
@@ -520,6 +613,9 @@ Page({
     if (currentScope === 'month') {
       const targetDate = new Date(viewYear, viewMonth - 1, 1);
       filteredList = list.filter(g => isDateInThisMonth(g.date, targetDate));
+      if (filteredList.length === 0) return [];
+    } else if (currentScope === 'all') {
+      filteredList = list.filter(g => isDateInYear(g.date, allYear));
       if (filteredList.length === 0) return [];
     }
 
@@ -698,8 +794,8 @@ Page({
   switchScope(e) {
     const scope = e.currentTarget.dataset.scope || 'week';
     const list = this.data.bills || [];
-    const { viewYear, viewMonth } = this.data;
-    const groupedTimeline = this.buildGroupedTimeline(list, scope, viewYear, viewMonth);
+    const { viewYear, viewMonth, allYear } = this.data;
+    const groupedTimeline = this.buildGroupedTimeline(list, scope, viewYear, viewMonth, allYear);
     const isAllTimelineCollapsed = this.checkAllCollapsed(groupedTimeline);
 
     if (this._scopesData && this._scopesData[scope]) {
@@ -846,13 +942,17 @@ Page({
       this.loadCategories();
     }
 
+    const targetAccount = (this.data.accounts || []).find(a => a.id === this.data.selectedAccountId) || (this.data.accounts[0] || { id: 'acc_wx', name: '微信零钱' });
+
     addDirectBill({
       date: selectedDateShort,
       name: finalName,
       amount: amount,
       emoji: finalEmoji,
       type: finalType,
-      remark: billRemark.trim()
+      remark: billRemark.trim(),
+      accountId: targetAccount.id,
+      accountName: targetAccount.name
     });
 
     this.setData({
@@ -864,6 +964,7 @@ Page({
       selectedCategory: PRESET_CATEGORIES[0]
     });
 
+    this.loadAccountsData();
     this.refreshData();
     wx.showToast({
       title: `已记: ${finalEmoji} ¥${amount.toFixed(2)}`,
@@ -1054,6 +1155,7 @@ Page({
       editCustomCategoryName: customName,
       editCustomCategoryEmoji: customEmoji,
       editRemark: remark,
+      editAccountId: item.accountId || 'acc_wx',
       editDateString: ymd,
       editDateShort: group.date,
       editDateDisplay: display
@@ -1084,12 +1186,15 @@ Page({
   onEditDateChange(e) {
     const ymd = e.detail.value;
     const parts = ymd.split('-');
+    const y = parseInt(parts[0], 10);
     const m = parseInt(parts[1], 10);
     const d = parseInt(parts[2], 10);
+    const nowYear = new Date().getFullYear();
+    const short = (y !== nowYear) ? `${y}.${m}.${d}` : `${m}.${d}`;
     this.setData({
       editDateString: ymd,
-      editDateShort: `${m}.${d}`,
-      editDateDisplay: `${m}月${d}日`
+      editDateShort: short,
+      editDateDisplay: `${y !== nowYear ? (y + '年') : ''}${m}月${d}日`
     });
   },
 
@@ -1102,7 +1207,8 @@ Page({
       editCustomCategoryName, 
       editCustomCategoryEmoji,
       editRemark, 
-      editDateShort 
+      editDateShort,
+      editAccountId
     } = this.data;
 
     const numAmount = parseFloat(editAmount);
@@ -1125,6 +1231,8 @@ Page({
       }
     }
 
+    const targetAccount = (this.data.accounts || []).find(a => a.id === editAccountId) || { id: 'acc_wx', name: '微信零钱' };
+
     const ok = updateBillItem({
       groupId: editingGroupId,
       itemId: editingItemId,
@@ -1133,11 +1241,14 @@ Page({
       emoji: finalEmoji,
       type: finalType,
       newDate: editDateShort,
-      remark: (editRemark || '').trim()
+      remark: (editRemark || '').trim(),
+      accountId: targetAccount.id,
+      accountName: targetAccount.name
     });
 
     if (ok) {
       this.setData({ showEditModal: false });
+      this.loadAccountsData();
       this.refreshData();
       wx.showToast({ title: '✓ 已更新修改', icon: 'success' });
     } else {
@@ -1158,6 +1269,7 @@ Page({
         if (res.confirm) {
           deleteBillItem(editingGroupId, editingItemId);
           this.setData({ showEditModal: false });
+          this.loadAccountsData();
           this.refreshData();
           wx.showToast({ title: '已删除该笔账单', icon: 'none' });
         }

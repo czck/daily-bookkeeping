@@ -14,3 +14,6 @@ __pycache__/
 token_audit.py
 run_audit.bat
 ming_emperors.html
+app.asar
+install_chinese_patch.bat
+patch/

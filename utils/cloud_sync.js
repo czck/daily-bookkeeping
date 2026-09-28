@@ -125,6 +125,8 @@ async function uploadToCloud(payload) {
     bills: payload.bills || [],
     habits: payload.habits || [],
     customCategories: payload.customCategories || [],
+    accounts: payload.accounts || [],
+    assetLogs: payload.assetLogs || [],
     updatedAt: now,
     deviceInfo: 'mini-program',
     appVersion: '2.0.0'
@@ -197,7 +199,9 @@ function notifyDataChanged() {
       const bills = storage.getBills();
       const habits = storage.getCustomHabits();
       const customCategories = storage.getCustomCategories();
-      await uploadToCloud({ bills, habits, customCategories });
+      const accounts = storage.getAccounts();
+      const assetLogs = storage.getAssetLogs();
+      await uploadToCloud({ bills, habits, customCategories, accounts, assetLogs });
       console.log('[云同步] 静默自动同步完成');
     } catch (e) {
       console.warn('[云同步] 后台静默同步失败，稍后重试', e.message);
@@ -230,7 +234,9 @@ async function autoSyncOnLaunch(onFinished) {
         console.log('[云同步] 首次开通云端，自动上传本地全部手账到云端');
         const habits = storage.getCustomHabits();
         const customCategories = storage.getCustomCategories();
-        await uploadToCloud({ bills: localBills, habits, customCategories });
+        const accounts = storage.getAccounts();
+        const assetLogs = storage.getAssetLogs();
+        await uploadToCloud({ bills: localBills, habits, customCategories, accounts, assetLogs });
       }
       if (onFinished) onFinished(true);
       return;
@@ -250,6 +256,12 @@ async function autoSyncOnLaunch(onFinished) {
       if (cloudDoc.customCategories && Array.isArray(cloudDoc.customCategories)) {
         wx.setStorageSync('MY_CUSTOM_CATEGORIES_LIST_V1', cloudDoc.customCategories);
       }
+      if (cloudDoc.accounts && Array.isArray(cloudDoc.accounts)) {
+        storage.saveAccounts(cloudDoc.accounts);
+      }
+      if (cloudDoc.assetLogs && Array.isArray(cloudDoc.assetLogs)) {
+        wx.setStorageSync('MY_ASSET_LOGS_V1', cloudDoc.assetLogs);
+      }
       wx.setStorageSync(LOCAL_UPDATED_KEY, cloudUpdated);
       wx.setStorageSync(LAST_SYNC_TIME_KEY, Date.now());
       currentSyncStatus.lastSyncTime = '刚刚';
@@ -268,6 +280,12 @@ async function autoSyncOnLaunch(onFinished) {
       if (cloudDoc.customCategories && Array.isArray(cloudDoc.customCategories)) {
         wx.setStorageSync('MY_CUSTOM_CATEGORIES_LIST_V1', cloudDoc.customCategories);
       }
+      if (cloudDoc.accounts && Array.isArray(cloudDoc.accounts)) {
+        storage.saveAccounts(cloudDoc.accounts);
+      }
+      if (cloudDoc.assetLogs && Array.isArray(cloudDoc.assetLogs)) {
+        wx.setStorageSync('MY_ASSET_LOGS_V1', cloudDoc.assetLogs);
+      }
       wx.setStorageSync(LOCAL_UPDATED_KEY, cloudUpdated);
       wx.setStorageSync(LAST_SYNC_TIME_KEY, Date.now());
       currentSyncStatus.lastSyncTime = '刚刚';
@@ -277,7 +295,9 @@ async function autoSyncOnLaunch(onFinished) {
       console.log('[云同步] 本地有更新的修改，自动上传至云端');
       const habits = storage.getCustomHabits();
       const customCategories = storage.getCustomCategories();
-      await uploadToCloud({ bills: localBills, habits, customCategories });
+      const accounts = storage.getAccounts();
+      const assetLogs = storage.getAssetLogs();
+      await uploadToCloud({ bills: localBills, habits, customCategories, accounts, assetLogs });
       if (onFinished) onFinished(true);
     } else {
       console.log('[云同步] 本地与云端已是最新');
@@ -299,7 +319,9 @@ async function manualUpload() {
   const bills = storage.getBills();
   const habits = storage.getCustomHabits();
   const customCategories = storage.getCustomCategories();
-  return await uploadToCloud({ bills, habits, customCategories });
+  const accounts = storage.getAccounts();
+  const assetLogs = storage.getAssetLogs();
+  return await uploadToCloud({ bills, habits, customCategories, accounts, assetLogs });
 }
 
 /**
@@ -317,6 +339,12 @@ async function manualDownload() {
   }
   if (cloudDoc.customCategories && Array.isArray(cloudDoc.customCategories)) {
     wx.setStorageSync('MY_CUSTOM_CATEGORIES_LIST_V1', cloudDoc.customCategories);
+  }
+  if (cloudDoc.accounts && Array.isArray(cloudDoc.accounts)) {
+    storage.saveAccounts(cloudDoc.accounts);
+  }
+  if (cloudDoc.assetLogs && Array.isArray(cloudDoc.assetLogs)) {
+    wx.setStorageSync('MY_ASSET_LOGS_V1', cloudDoc.assetLogs);
   }
   const now = Date.now();
   wx.setStorageSync(LOCAL_UPDATED_KEY, now);

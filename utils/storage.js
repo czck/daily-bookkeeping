@@ -6,6 +6,16 @@
 const STORAGE_KEY = 'SHUIYIN_BILLS_DATA_V3';
 const HABITS_KEY = 'MY_CUSTOM_HABITS_LIST_V1';
 const CUSTOM_CATEGORIES_KEY = 'MY_CUSTOM_CATEGORIES_LIST_V1';
+const ACCOUNTS_KEY = 'MY_ASSET_ACCOUNTS_V1';
+const ASSET_LOGS_KEY = 'MY_ASSET_LOGS_V1';
+const ASSET_PRIVACY_KEY = 'MY_ASSET_PRIVACY_HIDE_V1';
+
+const DEFAULT_ACCOUNTS = [
+  { id: 'acc_wx', name: '微信零钱', emoji: '🟢', balance: 0.00, type: 'wechat' },
+  { id: 'acc_alipay', name: '支付宝', emoji: '🔵', balance: 0.00, type: 'alipay' },
+  { id: 'acc_bank', name: '银行卡', emoji: '💳', balance: 0.00, type: 'bank' },
+  { id: 'acc_cash', name: '现金钱包', emoji: '💵', balance: 0.00, type: 'cash' }
+];
 
 // 默认预置的打卡项（用户可随意新增或删除）
 const DEFAULT_HABITS = [
@@ -215,10 +225,16 @@ function deleteCustomCategory(name) {
 function findOrCreateGroup(bills, targetDate) {
   let group = bills.find(g => g.date === targetDate);
   if (!group) {
-    const match = targetDate.match(/(\d{1,2})[\.\-\/月](\d{1,2})/);
-    const display = match ? `${match[1]}月${match[2]}日` : targetDate;
+    const fullMatch = targetDate.match(/^(\d{4})[\.\-\/年](\d{1,2})[\.\-\/月](\d{1,2})/);
+    let display = targetDate;
+    if (fullMatch) {
+      display = `${fullMatch[1]}年${fullMatch[2]}月${fullMatch[3]}日`;
+    } else {
+      const match = targetDate.match(/(\d{1,2})[\.\-\/月](\d{1,2})/);
+      display = match ? `${match[1]}月${match[2]}日` : targetDate;
+    }
     group = {
-      id: 'group_' + targetDate.replace(/[\.\-\/月日]/g, '_') + '_' + Date.now(),
+      id: 'group_' + targetDate.replace(/[\.\-\/年月日]/g, '_') + '_' + Date.now(),
       date: targetDate,
       dateDisplay: display,
       items: [],
@@ -230,22 +246,33 @@ function findOrCreateGroup(bills, targetDate) {
   return group;
 }
 
-function addDirectBill({ date, name, amount, emoji, type, remark }) {
+function addDirectBill({ date, name, amount, emoji, type, remark, accountId, accountName }) {
   const bills = getBills();
   const group = findOrCreateGroup(bills, date);
 
+  const finalAmount = Math.round(amount * 100) / 100;
   const fullName = remark ? `${name} (${remark})` : name;
-  group.items.push({
+  const targetAccId = accountId || 'acc_wx';
+  const targetAccName = accountName || '微信零钱';
+
+  const newItem = {
     id: 'item_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
     name: fullName,
-    amount: Math.round(amount * 100) / 100,
+    amount: finalAmount,
     emoji: emoji || '🍳',
     tag: name.slice(0, 1) || '账',
-    type: type || 'other'
-  });
+    type: type || 'other',
+    accountId: targetAccId,
+    accountName: targetAccName
+  };
+
+  group.items.push(newItem);
 
   const sum = group.items.reduce((acc, it) => acc + (it.amount || 0), 0);
   group.total = Math.round(sum * 100) / 100;
+
+  // 联动扣减对应资产账户
+  deductFromAccountForBill(targetAccId, finalAmount, fullName);
 
   setBills(bills);
   return bills;
@@ -332,15 +359,24 @@ function addBillGroups(newGroups) {
 }
 
 function deleteBillGroup(id) {
-  const current = getBills().filter(g => g.id !== id);
-  setBills(current);
-  return current;
+  const current = getBills();
+  const group = current.find(g => g.id === id);
+  if (group && group.items) {
+    group.items.forEach(it => {
+      if (it.amount > 0) {
+        refundToAccountForBill(it.accountId || 'acc_wx', it.amount, it.name);
+      }
+    });
+  }
+  const filtered = current.filter(g => g.id !== id);
+  setBills(filtered);
+  return filtered;
 }
 
 /**
  * 修改单笔账单条目
  */
-function updateBillItem({ groupId, itemId, name, amount, emoji, type, newDate, remark }) {
+function updateBillItem({ groupId, itemId, name, amount, emoji, type, newDate, remark, accountId, accountName }) {
   const bills = getBills();
   const group = bills.find(g => g.id === groupId);
   if (!group || !group.items) return false;
@@ -349,13 +385,24 @@ function updateBillItem({ groupId, itemId, name, amount, emoji, type, newDate, r
   if (itemIndex < 0) return false;
 
   const targetItem = group.items[itemIndex];
+  const oldAmount = targetItem.amount || 0;
+  const oldAccountId = targetItem.accountId || 'acc_wx';
+
   const finalFullName = remark ? `${name} (${remark})` : name;
   const numAmount = Math.round(parseFloat(amount) * 100) / 100;
+
+  const newAccId = accountId || oldAccountId;
+  const newAccName = accountName || targetItem.accountName || '微信零钱';
 
   targetItem.name = finalFullName;
   targetItem.amount = numAmount;
   if (emoji) targetItem.emoji = emoji;
   if (type) targetItem.type = type;
+  targetItem.accountId = newAccId;
+  targetItem.accountName = newAccName;
+
+  // 联动资产账户调整
+  updateAccountForBillChange(oldAccountId, oldAmount, newAccId, numAmount, finalFullName);
 
   // 检查是否修改了日期
   if (newDate && newDate !== group.date) {
@@ -396,9 +443,15 @@ function deleteBillItem(groupId, itemId) {
   const idx = group.items.findIndex(it => it.id === itemId);
   if (idx < 0) return false;
 
+  const removedItem = group.items[idx];
   group.items.splice(idx, 1);
   const sum = group.items.reduce((acc, it) => acc + (it.amount || 0), 0);
   group.total = Math.round(sum * 100) / 100;
+
+  // 联动退回对应资产账户
+  if (removedItem && removedItem.amount > 0) {
+    refundToAccountForBill(removedItem.accountId || 'acc_wx', removedItem.amount, removedItem.name);
+  }
 
   // 如果 items 为空且无其他内容，清理该 group
   if (group.items.length === 0 && !group.book && !group.travel && (!group.tags || group.tags.length === 0)) {
@@ -611,6 +664,284 @@ function cleanTestData() {
   }
 }
 
+/**
+ * 资产多账户管理核心方法
+ */
+function getAccounts() {
+  try {
+    const val = wx.getStorageSync(ACCOUNTS_KEY);
+    if (val && Array.isArray(val) && val.length > 0) {
+      return val.map(acc => Object.assign({}, acc, {
+        balance: Math.round((parseFloat(acc.balance) || 0) * 100) / 100
+      }));
+    }
+  } catch (e) {}
+  saveAccounts(DEFAULT_ACCOUNTS);
+  return DEFAULT_ACCOUNTS;
+}
+
+function saveAccounts(list) {
+  try {
+    const safeList = (list || []).map(acc => ({
+      id: acc.id || ('acc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6)),
+      name: (acc.name || '账户').trim(),
+      emoji: acc.emoji || '💳',
+      balance: Math.round((parseFloat(acc.balance) || 0) * 100) / 100,
+      type: acc.type || 'other'
+    }));
+    wx.setStorageSync(ACCOUNTS_KEY, safeList);
+    triggerCloudSync();
+    return safeList;
+  } catch (e) {
+    console.error('保存账户列表失败', e);
+    return list;
+  }
+}
+
+function getTotalAssets(accountsList) {
+  const list = accountsList || getAccounts();
+  const sum = list.reduce((acc, it) => acc + (parseFloat(it.balance) || 0), 0);
+  return (Math.round(sum * 100) / 100).toFixed(2);
+}
+
+function getAssetLogs() {
+  try {
+    const val = wx.getStorageSync(ASSET_LOGS_KEY);
+    if (val && Array.isArray(val)) {
+      return val;
+    }
+  } catch (e) {}
+  return [];
+}
+
+function addAssetLog({ type, accountId, accountName, amount, balanceAfter, note, time }) {
+  try {
+    const logs = getAssetLogs();
+    const newLog = {
+      id: 'log_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      type: type || 'expense',
+      accountId: accountId || '',
+      accountName: accountName || '',
+      amount: Math.round((parseFloat(amount) || 0) * 100) / 100,
+      balanceAfter: typeof balanceAfter === 'number' ? Math.round(balanceAfter * 100) / 100 : null,
+      note: note || '',
+      time: time || Date.now()
+    };
+    logs.unshift(newLog);
+    if (logs.length > 200) logs.length = 200;
+    wx.setStorageSync(ASSET_LOGS_KEY, logs);
+    triggerCloudSync();
+    return logs;
+  } catch (e) {
+    console.error('记录资产变动日志失败', e);
+  }
+}
+
+function addAccount({ name, emoji, balance, type }) {
+  const list = getAccounts();
+  const numBalance = Math.round((parseFloat(balance) || 0) * 100) / 100;
+  const newAcc = {
+    id: 'acc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+    name: (name || '新账户').trim(),
+    emoji: emoji || '💳',
+    balance: numBalance,
+    type: type || 'other'
+  };
+  list.push(newAcc);
+  saveAccounts(list);
+  if (numBalance !== 0) {
+    addAssetLog({
+      type: 'adjust',
+      accountId: newAcc.id,
+      accountName: newAcc.name,
+      amount: numBalance,
+      balanceAfter: numBalance,
+      note: '新建账户初始余额'
+    });
+  }
+  return list;
+}
+
+function deleteAccount(id) {
+  let list = getAccounts();
+  list = list.filter(a => a.id !== id);
+  if (list.length === 0) {
+    list = DEFAULT_ACCOUNTS;
+  }
+  return saveAccounts(list);
+}
+
+function adjustAccountBalance(id, newBalance, reason) {
+  const list = getAccounts();
+  const target = list.find(a => a.id === id);
+  if (!target) return false;
+
+  const old = target.balance || 0;
+  const targetVal = Math.round((parseFloat(newBalance) || 0) * 100) / 100;
+  const diff = Math.round((targetVal - old) * 100) / 100;
+
+  target.balance = targetVal;
+  saveAccounts(list);
+
+  addAssetLog({
+    type: 'adjust',
+    accountId: target.id,
+    accountName: target.name,
+    amount: diff,
+    balanceAfter: targetVal,
+    note: reason || '余额校准平账'
+  });
+  return true;
+}
+
+function depositToAccount(id, amount, note) {
+  const list = getAccounts();
+  const target = list.find(a => a.id === id);
+  if (!target) return false;
+
+  const addVal = Math.round((parseFloat(amount) || 0) * 100) / 100;
+  target.balance = Math.round((target.balance + addVal) * 100) / 100;
+  saveAccounts(list);
+
+  addAssetLog({
+    type: 'income',
+    accountId: target.id,
+    accountName: target.name,
+    amount: addVal,
+    balanceAfter: target.balance,
+    note: note || '存入资金/收入'
+  });
+  return true;
+}
+
+function transferBetweenAccounts(fromId, toId, amount, note) {
+  const list = getAccounts();
+  const fromAcc = list.find(a => a.id === fromId);
+  const toAcc = list.find(a => a.id === toId);
+  if (!fromAcc || !toAcc || fromId === toId) return false;
+
+  const val = Math.round((parseFloat(amount) || 0) * 100) / 100;
+  fromAcc.balance = Math.round((fromAcc.balance - val) * 100) / 100;
+  toAcc.balance = Math.round((toAcc.balance + val) * 100) / 100;
+  saveAccounts(list);
+
+  addAssetLog({
+    type: 'transfer',
+    accountId: fromAcc.id,
+    accountName: `${fromAcc.name} → ${toAcc.name}`,
+    amount: val,
+    balanceAfter: fromAcc.balance,
+    note: note || `转账到 ${toAcc.name}`
+  });
+  return true;
+}
+
+function deductFromAccountForBill(accountId, amount, billName) {
+  const list = getAccounts();
+  let target = list.find(a => a.id === accountId);
+  if (!target && list.length > 0) target = list[0];
+  if (!target) return;
+
+  const val = Math.round((parseFloat(amount) || 0) * 100) / 100;
+  target.balance = Math.round((target.balance - val) * 100) / 100;
+  saveAccounts(list);
+
+  addAssetLog({
+    type: 'expense',
+    accountId: target.id,
+    accountName: target.name,
+    amount: val,
+    balanceAfter: target.balance,
+    note: `消费支出: ${billName || '日常支出'}`
+  });
+}
+
+function refundToAccountForBill(accountId, amount, billName) {
+  const list = getAccounts();
+  let target = list.find(a => a.id === accountId);
+  if (!target && list.length > 0) target = list[0];
+  if (!target) return;
+
+  const val = Math.round((parseFloat(amount) || 0) * 100) / 100;
+  target.balance = Math.round((target.balance + val) * 100) / 100;
+  saveAccounts(list);
+
+  addAssetLog({
+    type: 'refund',
+    accountId: target.id,
+    accountName: target.name,
+    amount: val,
+    balanceAfter: target.balance,
+    note: `删除账单回退: ${billName || '账单回退'}`
+  });
+}
+
+function updateAccountForBillChange(oldAccountId, oldAmount, newAccountId, newAmount, billName) {
+  const list = getAccounts();
+  const oldAmt = Math.round((parseFloat(oldAmount) || 0) * 100) / 100;
+  const newAmt = Math.round((parseFloat(newAmount) || 0) * 100) / 100;
+
+  if (oldAccountId === newAccountId) {
+    let target = list.find(a => a.id === oldAccountId);
+    if (!target && list.length > 0) target = list[0];
+    if (!target) return;
+
+    const diff = Math.round((newAmt - oldAmt) * 100) / 100;
+    if (diff !== 0) {
+      target.balance = Math.round((target.balance - diff) * 100) / 100;
+      saveAccounts(list);
+      addAssetLog({
+        type: diff > 0 ? 'expense' : 'refund',
+        accountId: target.id,
+        accountName: target.name,
+        amount: Math.abs(diff),
+        balanceAfter: target.balance,
+        note: `修改账单差额: ${billName || ''} (${diff > 0 ? '追扣' : '返还'})`
+      });
+    }
+  } else {
+    let oldAcc = list.find(a => a.id === oldAccountId);
+    let newAcc = list.find(a => a.id === newAccountId);
+    if (oldAcc) oldAcc.balance = Math.round((oldAcc.balance + oldAmt) * 100) / 100;
+    if (newAcc) newAcc.balance = Math.round((newAcc.balance - newAmt) * 100) / 100;
+    saveAccounts(list);
+    if (oldAcc) {
+      addAssetLog({
+        type: 'refund',
+        accountId: oldAcc.id,
+        accountName: oldAcc.name,
+        amount: oldAmt,
+        balanceAfter: oldAcc.balance,
+        note: `更换账户返还: ${billName || ''}`
+      });
+    }
+    if (newAcc) {
+      addAssetLog({
+        type: 'expense',
+        accountId: newAcc.id,
+        accountName: newAcc.name,
+        amount: newAmt,
+        balanceAfter: newAcc.balance,
+        note: `更换账户扣除: ${billName || ''}`
+      });
+    }
+  }
+}
+
+function getAssetPrivacy() {
+  try {
+    return !!wx.getStorageSync(ASSET_PRIVACY_KEY);
+  } catch (e) {
+    return false;
+  }
+}
+
+function setAssetPrivacy(hide) {
+  try {
+    wx.setStorageSync(ASSET_PRIVACY_KEY, !!hide);
+  } catch (e) {}
+}
+
 module.exports = {
   getBills,
   setBills,
@@ -635,5 +966,21 @@ module.exports = {
   exportBillsAsText,
   clearAllBills,
   cleanTestData,
-  DEFAULT_BILLS
+  getAccounts,
+  saveAccounts,
+  getTotalAssets,
+  getAssetLogs,
+  addAssetLog,
+  addAccount,
+  deleteAccount,
+  adjustAccountBalance,
+  depositToAccount,
+  transferBetweenAccounts,
+  deductFromAccountForBill,
+  refundToAccountForBill,
+  updateAccountForBillChange,
+  getAssetPrivacy,
+  setAssetPrivacy,
+  DEFAULT_BILLS,
+  DEFAULT_ACCOUNTS
 };

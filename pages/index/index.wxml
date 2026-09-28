@@ -19,6 +19,10 @@
       </view>
 
       <view class="header-actions">
+        <view class="top-action-btn asset-quick-btn" hover-class="btn-hover" bindtap="navigateToAssetTab">
+          <text class="icon">💼</text>
+          <text>{{isPrivacyHide ? '••••' : ('¥' + totalAssets)}}</text>
+        </view>
         <view class="top-action-btn" hover-class="btn-hover" bindtap="openAddModalDirect" data-mode="bill">
           <text class="icon">💰</text>
           <text>记一笔</text>
@@ -38,6 +42,22 @@
       </view>
       <view class="month-nav-btn" hover-class="btn-hover" catchtap="handleNextMonth">
         <text class="nav-label">{{nextMonthLabel}}</text>
+        <text class="nav-arrow">▶</text>
+      </view>
+    </view>
+
+    <!-- 年份左右切换导航器 (在“全部/年度”模式下展示，支持滑动与点击) -->
+    <view class="month-nav-row" wx:if="{{currentScope === 'all'}}">
+      <view class="month-nav-btn" hover-class="btn-hover" catchtap="handlePrevYear">
+        <text class="nav-arrow">◀</text>
+        <text class="nav-label">{{prevYearLabel}}</text>
+      </view>
+      <view class="month-nav-current">
+        <text class="nav-current-title">{{allYear}}年度</text>
+        <text class="nav-swipe-hint">👈 滑动切换年份 👉</text>
+      </view>
+      <view class="month-nav-btn" hover-class="btn-hover" catchtap="handleNextYear">
+        <text class="nav-label">{{nextYearLabel}}</text>
         <text class="nav-arrow">▶</text>
       </view>
     </view>
@@ -158,7 +178,10 @@
                       <view class="emoji-box emoji-{{bill.type || 'other'}}">
                         <text class="emoji-char">{{bill.emoji || '🍳'}}</text>
                       </view>
-                      <text class="item-name">{{bill.name}}</text>
+                      <view class="item-name-col">
+                        <text class="item-name">{{bill.name}}</text>
+                        <text class="item-acc-tag" wx:if="{{bill.accountName}}">{{bill.accountName}}</text>
+                      </view>
                     </view>
                     <view class="item-right">
                       <text class="item-amount">¥ {{bill.amountDisplay || bill.amount}}</text>
@@ -351,6 +374,25 @@
 
         <view class="input-group">
           <input class="form-input" placeholder="备注（可选，如：和朋友聚餐、淘宝买衣服）" value="{{billRemark}}" bindinput="onRemarkInput"/>
+        </view>
+
+        <!-- 支付/扣款资产账户选择 -->
+        <view class="account-select-section" wx:if="{{accounts && accounts.length > 0}}">
+          <text class="account-select-label">💳 支付账户 (实时扣除该账户余额)：</text>
+          <scroll-view class="account-pill-scroll" scroll-x="true" enable-flex="true">
+            <view 
+              class="account-pill {{selectedAccountId === acc.id ? 'account-pill-active' : ''}}" 
+              wx:for="{{accounts}}" 
+              wx:key="id" 
+              wx:for-item="acc"
+              catchtap="selectAccount" 
+              data-id="{{acc.id}}"
+            >
+              <text class="acc-pill-emoji">{{acc.emoji}}</text>
+              <text class="acc-pill-name">{{acc.name}}</text>
+              <text class="acc-pill-bal" wx:if="{{!isPrivacyHide}}">(¥{{acc.balanceDisplay}})</text>
+            </view>
+          </scroll-view>
         </view>
 
         <button class="btn-primary" hover-class="btn-hover" bindtap="handleSaveDirectBill">✓ 保存这笔账单</button>
@@ -653,6 +695,25 @@
       <!-- 备注输入 -->
       <view class="input-group">
         <input class="form-input" placeholder="备注（可选）" value="{{editRemark}}" bindinput="onEditRemarkInput"/>
+      </view>
+
+      <!-- 支付/扣款资产账户选择 -->
+      <view class="account-select-section" wx:if="{{accounts && accounts.length > 0}}">
+        <text class="account-select-label">💳 支付账户 (更换账户将自动调整结余)：</text>
+        <scroll-view class="account-pill-scroll" scroll-x="true" enable-flex="true">
+          <view 
+            class="account-pill {{editAccountId === acc.id ? 'account-pill-active' : ''}}" 
+            wx:for="{{accounts}}" 
+            wx:key="id" 
+            wx:for-item="acc"
+            catchtap="selectEditAccount" 
+            data-id="{{acc.id}}"
+          >
+            <text class="acc-pill-emoji">{{acc.emoji}}</text>
+            <text class="acc-pill-name">{{acc.name}}</text>
+            <text class="acc-pill-bal" wx:if="{{!isPrivacyHide}}">(¥{{acc.balanceDisplay}})</text>
+          </view>
+        </scroll-view>
       </view>
 
       <!-- 操作按钮：保存修改 + 删除单笔 -->
