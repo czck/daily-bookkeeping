@@ -181,7 +181,7 @@
         <view class="input-label">存入金额 (元)</view>
         <view class="input-group">
           <text class="input-prefix">¥</text>
-          <input class="input-field amount-input" type="digit" placeholder="0.00" value="{{depositAmount}}" bindinput="onDepositAmountInput" focus="{{showDepositModal}}" />
+          <input class="input-field amount-input" type="digit" placeholder="0.00" value="{{depositAmount}}" bindinput="onDepositAmountInput" />
         </view>
 
         <view class="input-label">来源备注 (如：工资收入、还钱、投资收益)</view>

@@ -618,25 +618,43 @@
 
 .btn-cancel {
   flex: 1;
-  height: 84rpx;
-  line-height: 84rpx;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 84rpx !important;
+  padding: 0 16rpx !important;
+  margin: 0 !important;
+  line-height: normal !important;
   background: #f1f5f9;
   color: #64748b;
   font-size: 28rpx;
   font-weight: 600;
   border-radius: 20rpx;
   border: none;
+  box-sizing: border-box;
 }
 
 .btn-confirm {
   flex: 1.5;
-  height: 84rpx;
-  line-height: 84rpx;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 84rpx !important;
+  padding: 0 16rpx !important;
+  margin: 0 !important;
+  line-height: normal !important;
   color: #ffffff;
   font-size: 28rpx;
   font-weight: 600;
   border-radius: 20rpx;
   border: none;
+  box-sizing: border-box;
+}
+
+.btn-cancel::after,
+.btn-confirm::after {
+  display: none !important;
+  border: none !important;
 }
 
 .btn-confirm.bg-emerald {
