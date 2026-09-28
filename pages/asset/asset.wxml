@@ -12,10 +12,6 @@
           <text class="privacy-text">{{isPrivacyHide ? '已隐藏' : '显示中'}}</text>
         </view>
       </view>
-      <view class="header-tag">
-        <text class="sync-dot"></text>
-        <text class="sync-text">实时联动</text>
-      </view>
     </view>
 
     <view class="asset-amount-wrap">
@@ -32,11 +28,6 @@
       <view class="footer-stat-item">
         <text class="stat-num">{{logs.length}}</text>
         <text class="stat-label">资产明细记录</text>
-      </view>
-      <view class="footer-divider"></view>
-      <view class="footer-stat-item">
-        <text class="stat-num">微信云</text>
-        <text class="stat-label">双端云备份</text>
       </view>
     </view>
   </view>
@@ -131,9 +122,7 @@
     <view class="section-header">
       <view class="section-title-wrap">
         <text class="section-title">近期资金变动</text>
-        <text class="section-badge">实时记账联动</text>
       </view>
-      <text class="section-hint">记账自动扣减</text>
     </view>
 
     <view class="logs-list" wx:if="{{logs.length > 0}}">

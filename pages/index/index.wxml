@@ -19,10 +19,6 @@
       </view>
 
       <view class="header-actions">
-        <view class="top-action-btn asset-quick-btn" hover-class="btn-hover" bindtap="navigateToAssetTab">
-          <text class="icon">💼</text>
-          <text>{{isPrivacyHide ? '••••' : ('¥' + totalAssets)}}</text>
-        </view>
         <view class="top-action-btn" hover-class="btn-hover" bindtap="openAddModalDirect" data-mode="bill">
           <text class="icon">💰</text>
           <text>记一笔</text>
@@ -38,7 +34,6 @@
       </view>
       <view class="month-nav-current">
         <text class="nav-current-title">{{viewYear}}年{{viewMonth}}月</text>
-        <text class="nav-swipe-hint">👈 滑动切换 👉</text>
       </view>
       <view class="month-nav-btn" hover-class="btn-hover" catchtap="handleNextMonth">
         <text class="nav-label">{{nextMonthLabel}}</text>
@@ -54,7 +49,6 @@
       </view>
       <view class="month-nav-current">
         <text class="nav-current-title">{{allYear}}年度</text>
-        <text class="nav-swipe-hint">👈 滑动切换年份 👉</text>
       </view>
       <view class="month-nav-btn" hover-class="btn-hover" catchtap="handleNextYear">
         <text class="nav-label">{{nextYearLabel}}</text>

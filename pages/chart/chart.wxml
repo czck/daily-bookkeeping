@@ -44,12 +44,9 @@
       </view>
     </view>
 
-    <!-- 柱状图辅助操作栏：左侧滑动提示，右侧排序切换 (按时间 / 按消费) -->
+    <!-- 柱状图辅助操作栏：左侧走势期数统计，右侧排序切换 (按时间 / 按消费) -->
     <view class="chart-sub-toolbar">
-      <view class="chart-scroll-hint" wx:if="{{currentTrendList && currentTrendList.length > 4}}">
-        <text>👈 左右滑动 (共 {{currentTrendList.length}} 期)</text>
-      </view>
-      <view class="chart-scroll-hint" wx:else>
+      <view class="chart-scroll-hint">
         <text>📊 走势明细 (共 {{currentTrendList.length || 0}} 期)</text>
       </view>
 
