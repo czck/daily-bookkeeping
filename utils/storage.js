@@ -759,7 +759,37 @@ function addAccount({ name, emoji, balance, type }) {
       note: '新建账户初始余额'
     });
   }
-  return list;
+  return newAcc;
+}
+
+function updateAccount({ id, name, emoji, type }) {
+  const list = getAccounts();
+  const target = list.find(a => a.id === id);
+  if (!target) return false;
+
+  const oldName = target.name;
+  if (name && name.trim()) {
+    target.name = name.trim();
+  }
+  if (emoji) {
+    target.emoji = emoji;
+  }
+  if (type) {
+    target.type = type;
+  }
+  saveAccounts(list);
+
+  if (oldName !== target.name) {
+    addAssetLog({
+      type: 'adjust',
+      accountId: target.id,
+      accountName: target.name,
+      amount: 0,
+      balanceAfter: target.balance,
+      note: `修改账户名称: 由「${oldName}」修改为「${target.name}」`
+    });
+  }
+  return target;
 }
 
 function deleteAccount(id) {
@@ -972,6 +1002,7 @@ module.exports = {
   getAssetLogs,
   addAssetLog,
   addAccount,
+  updateAccount,
   deleteAccount,
   adjustAccountBalance,
   depositToAccount,

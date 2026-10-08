@@ -15,8 +15,8 @@
     </view>
 
     <view class="asset-amount-wrap">
-      <text class="currency-symbol">{{isPrivacyHide ? '' : '¥'}}</text>
-      <text class="asset-amount-val">{{isPrivacyHide ? '••••••' : totalAssets}}</text>
+      <text class="currency-symbol">{{isPrivacyHide ? '' : (isTotalNegative ? '-¥' : '¥')}}</text>
+      <text class="asset-amount-val">{{isPrivacyHide ? '••••••' : absTotalAssets}}</text>
     </view>
 
     <view class="card-footer-info">
@@ -89,19 +89,23 @@
             <view class="acc-info">
               <view class="acc-name-row">
                 <text class="acc-name">{{item.name}}</text>
-                <text class="acc-percent-tag" wx:if="{{item.percent > 0}}">{{item.percent}}% 占比</text>
+                <text class="acc-debt-tag" wx:if="{{item.isNegative}}">负债</text>
+                <text class="acc-percent-tag" wx:elif="{{item.percent > 0}}">{{item.percent}}% 占比</text>
               </view>
               <view class="acc-progress-track">
-                <view class="acc-progress-bar" style="width: {{item.percent}}%;"></view>
+                <view class="acc-progress-bar {{item.isNegative ? 'acc-progress-debt' : ''}}" style="width: {{item.isNegative ? '100' : item.percent}}%;"></view>
               </view>
             </view>
             <view class="acc-balance-wrap">
-              <text class="acc-balance">{{isPrivacyHide ? '••••' : ('¥ ' + item.balanceDisplay)}}</text>
+              <text class="acc-balance {{item.isNegative ? 'acc-balance-negative' : ''}}">{{isPrivacyHide ? '••••' : item.formattedBalance}}</text>
             </view>
           </view>
 
           <!-- 账户快捷工具条 -->
           <view class="account-card-actions">
+            <view class="acc-action-pill edit-pill" data-id="{{item.id}}" bindtap="openEditAccModal" hover-class="btn-hover">
+              <text>✏️ 修改</text>
+            </view>
             <view class="acc-action-pill" data-id="{{item.id}}" bindtap="openDepositModal" hover-class="btn-hover">
               <text>➕ 存入</text>
             </view>
@@ -249,7 +253,7 @@
     </view>
   </view>
 
-  <!-- ================= 弹窗 3：余额校准弹窗 ================= -->
+  <!-- ================= 弹窗 3：余额校准弹窗 (支持负数/负债) ================= -->
   <view class="modal-overlay" wx:if="{{showCalibrateModal}}" bindtap="closeCalibrateModal">
     <view class="modal-card" catchtap="true">
       <view class="modal-header">
@@ -262,20 +266,30 @@
         <picker mode="selector" range="{{accounts}}" range-key="name" bindchange="onCalibrateAccChange">
           <view class="picker-box">
             <block wx:for="{{accounts}}" wx:key="id">
-              <text wx:if="{{item.id === calibrateAccountId}}">{{item.emoji}} {{item.name}} (当前账面: ¥{{item.balanceDisplay}})</text>
+              <text wx:if="{{item.id === calibrateAccountId}}">{{item.emoji}} {{item.name}} (当前账面: {{item.formattedBalance}})</text>
             </block>
             <text class="picker-arrow">▼</text>
           </view>
         </picker>
 
         <view class="input-label">实际账户当前金额 (修改为此数值)</view>
+        <!-- 正负号选择胶囊 -->
+        <view class="sign-switch-row">
+          <view class="sign-pill {{calibrateSign === '+' ? 'sign-pill-active-plus' : ''}}" data-sign="+" bindtap="setCalibrateSign">
+            <text>➕ 正数 (资产/结余)</text>
+          </view>
+          <view class="sign-pill {{calibrateSign === '-' ? 'sign-pill-active-minus' : ''}}" data-sign="-" bindtap="setCalibrateSign">
+            <text>➖ 负数 (负债/欠款)</text>
+          </view>
+        </view>
+
         <view class="input-group">
-          <text class="input-prefix">¥</text>
-          <input class="input-field amount-input" type="digit" placeholder="0.00" value="{{calibrateBalance}}" bindinput="onCalibrateBalanceInput" />
+          <text class="input-prefix {{calibrateSign === '-' ? 'prefix-negative' : ''}}">{{calibrateSign}}¥</text>
+          <input class="input-field amount-input" type="digit" placeholder="0.00" value="{{calibrateBalanceAbs}}" bindinput="onCalibrateBalanceInput" />
         </view>
 
         <view class="input-label">校准原因 / 平账说明</view>
-        <input class="input-field" placeholder="选填，如：微信提现手续费/线下零钱误差" value="{{calibrateReason}}" bindinput="onCalibrateReasonInput" />
+        <input class="input-field" placeholder="选填，如：微信提现手续费/信用卡账单" value="{{calibrateReason}}" bindinput="onCalibrateReasonInput" />
       </view>
 
       <view class="modal-footer">
@@ -285,7 +299,7 @@
     </view>
   </view>
 
-  <!-- ================= 弹窗 4：新建账户弹窗 ================= -->
+  <!-- ================= 弹窗 4：新建账户弹窗 (支持负债/欠款) ================= -->
   <view class="modal-overlay" wx:if="{{showAddAccModal}}" bindtap="closeAddAccModal">
     <view class="modal-card" catchtap="true">
       <view class="modal-header">
@@ -295,7 +309,7 @@
 
       <view class="modal-body">
         <view class="input-label">账户名称</view>
-        <input class="input-field" placeholder="如：招商银行卡、公积金、私房钱" value="{{newAccName}}" bindinput="onNewAccNameInput" />
+        <input class="input-field" placeholder="如：招商银行卡、花呗、公积金" value="{{newAccName}}" bindinput="onNewAccNameInput" />
 
         <view class="input-label">选择账户图标</view>
         <view class="emoji-scroll-row">
@@ -307,15 +321,54 @@
         </view>
 
         <view class="input-label">初始余额 (元)</view>
+        <!-- 正负号选择胶囊 -->
+        <view class="sign-switch-row">
+          <view class="sign-pill {{newAccSign === '+' ? 'sign-pill-active-plus' : ''}}" data-sign="+" bindtap="setNewAccSign">
+            <text>➕ 资产 (正数)</text>
+          </view>
+          <view class="sign-pill {{newAccSign === '-' ? 'sign-pill-active-minus' : ''}}" data-sign="-" bindtap="setNewAccSign">
+            <text>➖ 负债 (如信用卡/花呗)</text>
+          </view>
+        </view>
+
         <view class="input-group">
-          <text class="input-prefix">¥</text>
-          <input class="input-field amount-input" type="digit" placeholder="0.00" value="{{newAccBalance}}" bindinput="onNewAccBalanceInput" />
+          <text class="input-prefix {{newAccSign === '-' ? 'prefix-negative' : ''}}">{{newAccSign}}¥</text>
+          <input class="input-field amount-input" type="digit" placeholder="0.00" value="{{newAccBalanceAbs}}" bindinput="onNewAccBalanceInput" />
         </view>
       </view>
 
       <view class="modal-footer">
         <button class="btn-cancel" bindtap="closeAddAccModal">取消</button>
         <button class="btn-confirm bg-purple" bindtap="submitAddAccount">创建账户</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- ================= 弹窗 5：修改账户信息弹窗 (改名 / 改图标) ================= -->
+  <view class="modal-overlay" wx:if="{{showEditAccModal}}" bindtap="closeEditAccModal">
+    <view class="modal-card" catchtap="true">
+      <view class="modal-header">
+        <text class="modal-title">✏️ 修改账户信息</text>
+        <view class="modal-close" bindtap="closeEditAccModal">✕</view>
+      </view>
+
+      <view class="modal-body">
+        <view class="input-label">账户名称 (支持自定义如招行卡、工行工资卡)</view>
+        <input class="input-field" placeholder="输入账户名称" value="{{editAccName}}" bindinput="onEditAccNameInput" />
+
+        <view class="input-label">选择账户图标</view>
+        <view class="emoji-scroll-row">
+          <block wx:for="{{emojiList}}" wx:key="*this">
+            <view class="emoji-badge {{item === editAccEmoji ? 'emoji-selected' : ''}}" data-emoji="{{item}}" bindtap="onSelectEditAccEmoji">
+              <text>{{item}}</text>
+            </view>
+          </block>
+        </view>
+      </view>
+
+      <view class="modal-footer">
+        <button class="btn-cancel" bindtap="closeEditAccModal">取消</button>
+        <button class="btn-confirm bg-indigo" bindtap="submitEditAccount">保存修改</button>
       </view>
     </view>
   </view>

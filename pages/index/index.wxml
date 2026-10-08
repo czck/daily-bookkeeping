@@ -384,7 +384,7 @@
             >
               <text class="acc-pill-emoji">{{acc.emoji}}</text>
               <text class="acc-pill-name">{{acc.name}}</text>
-              <text class="acc-pill-bal" wx:if="{{!isPrivacyHide}}">(¥{{acc.balanceDisplay}})</text>
+              <text class="acc-pill-bal" wx:if="{{!isPrivacyHide}}">({{acc.formattedBalance || ('¥' + acc.balanceDisplay)}})</text>
             </view>
           </scroll-view>
         </view>
@@ -705,7 +705,7 @@
           >
             <text class="acc-pill-emoji">{{acc.emoji}}</text>
             <text class="acc-pill-name">{{acc.name}}</text>
-            <text class="acc-pill-bal" wx:if="{{!isPrivacyHide}}">(¥{{acc.balanceDisplay}})</text>
+            <text class="acc-pill-bal" wx:if="{{!isPrivacyHide}}">({{acc.formattedBalance || ('¥' + acc.balanceDisplay)}})</text>
           </view>
         </scroll-view>
       </view>

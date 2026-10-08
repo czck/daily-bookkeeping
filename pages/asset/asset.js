@@ -4,6 +4,7 @@ const {
   getTotalAssets,
   getAssetLogs,
   addAccount,
+  updateAccount,
   deleteAccount,
   adjustAccountBalance,
   depositToAccount,
@@ -19,6 +20,8 @@ Page({
   data: {
     accounts: [],
     totalAssets: '0.00',
+    isTotalNegative: false,
+    absTotalAssets: '0.00',
     isPrivacyHide: false,
     logs: [],
     
@@ -36,15 +39,22 @@ Page({
 
     showCalibrateModal: false,
     calibrateAccountId: '',
-    calibrateBalance: '',
+    calibrateSign: '+',
+    calibrateBalanceAbs: '',
     calibrateReason: '',
 
     showAddAccModal: false,
     newAccName: '',
     newAccEmoji: '💳',
-    newAccBalance: '',
+    newAccSign: '+',
+    newAccBalanceAbs: '',
     newAccType: 'other',
-    emojiList: ACCOUNT_EMOJIS
+    emojiList: ACCOUNT_EMOJIS,
+
+    showEditAccModal: false,
+    editAccId: '',
+    editAccName: '',
+    editAccEmoji: '💳'
   },
 
   onLoad() {
@@ -68,13 +78,24 @@ Page({
     const isPrivacy = getAssetPrivacy();
     const total = getTotalAssets(rawAccounts);
     const numTotal = parseFloat(total) || 0;
+    const isTotalNegative = numTotal < 0;
+    const absTotalAssets = Math.abs(numTotal).toFixed(2);
 
     const accounts = rawAccounts.map(acc => {
       const b = typeof acc.balance === 'number' ? acc.balance : parseFloat(acc.balance) || 0;
+      const isNegative = b < 0;
+      const absVal = Math.abs(b);
+      const absDisplay = (Math.round(absVal * 100) / 100).toFixed(2);
+      const balanceDisplay = (Math.round(b * 100) / 100).toFixed(2);
+      const formattedBalance = isNegative ? `-¥${absDisplay}` : `¥${balanceDisplay}`;
       const percent = (numTotal > 0 && b > 0) ? Math.min(100, Math.round((b / numTotal) * 100)) : 0;
       return {
         ...acc,
-        balanceDisplay: (Math.round(b * 100) / 100).toFixed(2),
+        balance: b,
+        isNegative,
+        absDisplay,
+        balanceDisplay,
+        formattedBalance,
         percent: percent
       };
     });
@@ -123,6 +144,8 @@ Page({
     this.setData({
       accounts,
       totalAssets: total,
+      isTotalNegative,
+      absTotalAssets,
       isPrivacyHide: isPrivacy,
       logs
     });
@@ -245,15 +268,17 @@ Page({
     this.refreshAssetData();
   },
 
-  // ---------------- 余额校准 ----------------
+  // ---------------- 余额校准 (支持正负数/负债) ----------------
   openCalibrateModal(e) {
     const accId = (e && e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.id) 
       || (this.data.accounts[0] ? this.data.accounts[0].id : '');
     const target = this.data.accounts.find(a => a.id === accId) || this.data.accounts[0];
+    const isNeg = target ? target.isNegative : false;
     this.setData({
       showCalibrateModal: true,
       calibrateAccountId: target ? target.id : '',
-      calibrateBalance: target ? target.balanceDisplay : '',
+      calibrateSign: isNeg ? '-' : '+',
+      calibrateBalanceAbs: target ? target.absDisplay : '',
       calibrateReason: ''
     });
   },
@@ -262,19 +287,33 @@ Page({
     this.setData({ showCalibrateModal: false });
   },
 
+  setCalibrateSign(e) {
+    const sign = e.currentTarget.dataset.sign;
+    this.setData({ calibrateSign: sign });
+  },
+
   onCalibrateAccChange(e) {
     const idx = parseInt(e.detail.value, 10);
     const target = this.data.accounts[idx];
     if (target) {
       this.setData({
         calibrateAccountId: target.id,
-        calibrateBalance: target.balanceDisplay
+        calibrateSign: target.isNegative ? '-' : '+',
+        calibrateBalanceAbs: target.absDisplay
       });
     }
   },
 
   onCalibrateBalanceInput(e) {
-    this.setData({ calibrateBalance: e.detail.value });
+    let val = e.detail.value;
+    if (val.startsWith('-')) {
+      this.setData({
+        calibrateSign: '-',
+        calibrateBalanceAbs: val.replace(/^-+/, '')
+      });
+    } else {
+      this.setData({ calibrateBalanceAbs: val });
+    }
   },
 
   onCalibrateReasonInput(e) {
@@ -282,31 +321,38 @@ Page({
   },
 
   submitCalibrate() {
-    const { calibrateAccountId, calibrateBalance, calibrateReason } = this.data;
-    const num = parseFloat(calibrateBalance);
-    if (isNaN(num)) {
+    const { calibrateAccountId, calibrateSign, calibrateBalanceAbs, calibrateReason } = this.data;
+    const absNum = parseFloat(calibrateBalanceAbs);
+    if (isNaN(absNum)) {
       wx.showToast({ title: '请输入实际余额', icon: 'none' });
       return;
     }
-    adjustAccountBalance(calibrateAccountId, num, calibrateReason || '手动校准对账');
+    const finalBalance = (calibrateSign === '-' ? -1 : 1) * Math.abs(absNum);
+    adjustAccountBalance(calibrateAccountId, finalBalance, calibrateReason || '手动校准对账');
     wx.showToast({ title: '校准完成', icon: 'success' });
     this.closeCalibrateModal();
     this.refreshAssetData();
   },
 
-  // ---------------- 新建账户 ----------------
+  // ---------------- 新建账户 (支持负债/负数设定) ----------------
   openAddAccModal() {
     this.setData({
       showAddAccModal: true,
       newAccName: '',
       newAccEmoji: '💳',
-      newAccBalance: '',
-      newAccType: 'bank'
+      newAccSign: '+',
+      newAccBalanceAbs: '',
+      newAccType: 'other'
     });
   },
 
   closeAddAccModal() {
     this.setData({ showAddAccModal: false });
+  },
+
+  setNewAccSign(e) {
+    const sign = e.currentTarget.dataset.sign;
+    this.setData({ newAccSign: sign });
   },
 
   onNewAccNameInput(e) {
@@ -319,25 +365,80 @@ Page({
   },
 
   onNewAccBalanceInput(e) {
-    this.setData({ newAccBalance: e.detail.value });
+    let val = e.detail.value;
+    if (val.startsWith('-')) {
+      this.setData({
+        newAccSign: '-',
+        newAccBalanceAbs: val.replace(/^-+/, '')
+      });
+    } else {
+      this.setData({ newAccBalanceAbs: val });
+    }
   },
 
   submitAddAccount() {
-    const { newAccName, newAccEmoji, newAccBalance, newAccType } = this.data;
+    const { newAccName, newAccEmoji, newAccSign, newAccBalanceAbs, newAccType } = this.data;
     if (!newAccName || !newAccName.trim()) {
       wx.showToast({ title: '请输入账户名称', icon: 'none' });
       return;
     }
-    const balance = parseFloat(newAccBalance) || 0;
+    const absVal = parseFloat(newAccBalanceAbs) || 0;
+    const finalBalance = (newAccSign === '-' ? -1 : 1) * Math.abs(absVal);
     addAccount({
       name: newAccName.trim(),
       emoji: newAccEmoji,
-      balance,
+      balance: finalBalance,
       type: newAccType
     });
     wx.showToast({ title: '账户创建成功', icon: 'success' });
     this.closeAddAccModal();
     this.refreshAssetData();
+  },
+
+  // ---------------- 修改账户 (重命名 / 图标) ----------------
+  openEditAccModal(e) {
+    const accId = e.currentTarget.dataset.id;
+    const target = this.data.accounts.find(a => a.id === accId);
+    if (!target) return;
+    this.setData({
+      showEditAccModal: true,
+      editAccId: target.id,
+      editAccName: target.name,
+      editAccEmoji: target.emoji || '💳'
+    });
+  },
+
+  closeEditAccModal() {
+    this.setData({ showEditAccModal: false });
+  },
+
+  onEditAccNameInput(e) {
+    this.setData({ editAccName: e.detail.value });
+  },
+
+  onSelectEditAccEmoji(e) {
+    const emoji = e.currentTarget.dataset.emoji;
+    this.setData({ editAccEmoji: emoji });
+  },
+
+  submitEditAccount() {
+    const { editAccId, editAccName, editAccEmoji } = this.data;
+    if (!editAccName || !editAccName.trim()) {
+      wx.showToast({ title: '请输入账户名称', icon: 'none' });
+      return;
+    }
+    const updated = updateAccount({
+      id: editAccId,
+      name: editAccName.trim(),
+      emoji: editAccEmoji
+    });
+    if (updated) {
+      wx.showToast({ title: '修改成功', icon: 'success' });
+      this.closeEditAccModal();
+      this.refreshAssetData();
+    } else {
+      wx.showToast({ title: '修改失败', icon: 'none' });
+    }
   },
 
   // ---------------- 删除账户 ----------------

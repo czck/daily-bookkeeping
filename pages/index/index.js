@@ -248,9 +248,17 @@ Page({
     const isPrivacy = getAssetPrivacy();
     const accounts = rawAccounts.map(acc => {
       const b = typeof acc.balance === 'number' ? acc.balance : parseFloat(acc.balance) || 0;
+      const isNegative = b < 0;
+      const absDisplay = (Math.round(Math.abs(b) * 100) / 100).toFixed(2);
+      const balanceDisplay = (Math.round(b * 100) / 100).toFixed(2);
+      const formattedBalance = isNegative ? `-¥${absDisplay}` : `¥${balanceDisplay}`;
       return {
         ...acc,
-        balanceDisplay: (Math.round(b * 100) / 100).toFixed(2)
+        balance: b,
+        isNegative,
+        absDisplay,
+        balanceDisplay,
+        formattedBalance
       };
     });
     this.setData({
